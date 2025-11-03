@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "calnic",
     "version": "1.0.0",
+=======
+    "name": "next-netlify-platform-starter",
+    "version": "0.1.0",
+>>>>>>> dceb992 (adding babel-plugin-react-compiler to package.json)
     "type": "module",
     "private": true,
     "scripts": {
@@ -11,6 +16,7 @@
         "lint:fix": "eslint --fix"
     },
     "dependencies": {
+<<<<<<< HEAD
         "@mantine/core": "^8.3.6",
         "@mantine/form": "^8.3.6",
         "@mantine/hooks": "^8.3.6",
@@ -23,6 +29,14 @@
         "next": "^16.0.1",
         "react": "19.2.0",
         "react-big-calendar": "^1.19.4",
+=======
+        "@netlify/blobs": "^10.3.1",
+        "blobshape": "^1.0.0",
+        "bright": "^1.0.0",
+        "markdown-to-jsx": "^7.7.16",
+        "next": "^16.0.1",
+        "react": "19.2.0",
+>>>>>>> dceb992 (adding babel-plugin-react-compiler to package.json)
         "react-dom": "19.2.0",
         "unique-names-generator": "^4.7.1"
     },

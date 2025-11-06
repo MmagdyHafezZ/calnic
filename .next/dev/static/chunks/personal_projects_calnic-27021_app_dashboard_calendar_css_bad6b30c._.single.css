@@ -1,0 +1,85 @@
+/* [project]/personal_projects/calnic-27021/app/dashboard/calendar.css [app-client] (css) */
+.rbc-calendar {
+  font-family: Inter, sans-serif;
+}
+
+.rbc-header {
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rbc-month-view {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-day-bg {
+  border-left: 1px solid #e5e7eb;
+}
+
+.rbc-date-cell {
+  padding: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rbc-off-range {
+  color: #9ca3af;
+}
+
+.rbc-today {
+  background-color: #eff6ff;
+}
+
+.rbc-event {
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.rbc-event:focus {
+  outline: 2px solid #3b82f6;
+}
+
+.rbc-month-row {
+  border-top: 1px solid #e5e7eb;
+  min-height: 80px;
+}
+
+.rbc-day-bg + .rbc-day-bg {
+  border-left: 1px solid #e5e7eb;
+}
+
+.rbc-month-view .rbc-header {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.rbc-time-view {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.rbc-time-header {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.rbc-time-content {
+  border-top: 1px solid #e5e7eb;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #f3f4f6;
+  min-height: 60px;
+}
+
+.rbc-current-time-indicator {
+  background-color: #3b82f6;
+  height: 2px;
+}
+
+/*# sourceMappingURL=personal_projects_calnic-27021_app_dashboard_calendar_css_bad6b30c._.single.css.map*/

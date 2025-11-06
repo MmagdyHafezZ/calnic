@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/magdyhafez/personal_projects/calnic-27021/app/layout.jsx"],"sourcesContent":["import '../styles/globals.css';\n\nexport const metadata = {\n    title: 'Calnic Medical Clinic',\n    description: 'Changing Healthcare in Calgary One Patient at a Time',\n};\n\nexport default function RootLayout({ children }) {\n    return (\n        <html lang=\"en\">\n            <body className=\"bg-gray-50\">{children}</body>\n        </html>\n    );\n}\n"],"names":[],"mappings":";;;;;;;;;AAEO,MAAM,WAAW;IACpB,OAAO;IACP,aAAa;AACjB;AAEe,SAAS,WAAW,EAAE,QAAQ,EAAE;IAC3C,qBACI,keAAC;QAAK,MAAK;kBACP,cAAA,keAAC;YAAK,WAAU;sBAAc;;;;;;;;;;;AAG1C","debugId":null}},
+    {"offset": {"line": 38, "column": 0}, "map": {"version":3,"sources":["file:///Users/magdyhafez/personal_projects/calnic-27021/node_modules/.pnpm/next%4016.0.1_%40babel%2Bcore%407.28.5_%40opentelemetry%2Bapi%401.9.0_babel-plugin-react-compiler%401.0_cd04fde518a6993690e8e6f2c743b826/node_modules/next/src/server/route-modules/app-page/vendored/rsc/react-jsx-dev-runtime.ts"],"sourcesContent":["module.exports = (\n  require('../../module.compiled') as typeof import('../../module.compiled')\n).vendored['react-rsc']!.ReactJsxDevRuntime\n"],"names":["module","exports","require","vendored","ReactJsxDevRuntime"],"mappings":"AAAAA,OAAOC,OAAO,GACZC,QAAQ,uSACRC,QAAQ,CAAC,YAAY,CAAEC,kBAAkB","ignoreList":[0],"debugId":null}}]
+}

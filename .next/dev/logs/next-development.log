@@ -1,0 +1,95 @@
+[00:00:00.868] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:00.963] Server  LOG      ✓ Ready in 685ms
+[00:00:03.050] Server  LOG     [Middleware] GET / - 2025-11-06T02:08:06.482Z
+[00:00:05.278] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/personal_...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="en"
+-                         data-mantine-color-scheme="light"
+                        >
+                  ...
+
+[00:00:35.991] Server  LOG      ✓ Compiled in 178ms
+[00:00:44.284] Server  LOG     [Middleware] POST /api/login - 2025-11-06T02:08:47.737Z
+[00:00:48.166] Server  LOG     [Middleware] POST /api/login - 2025-11-06T02:08:51.621Z
+[00:00:48.186] Server  LOG     [Middleware] GET /dashboard - 2025-11-06T02:08:51.640Z
+[00:00:49.393] Browser WARN    Your app (or one of its dependencies) is using an outdated JSX transform. Update to the modern JSX transform for faster performance: https://react.dev/link/new-jsx-transform
+[00:00:49.393] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/dashboard" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/personal_...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="en"
+-                         data-mantine-color-scheme="light"
+                        >
+                          <head>
+                          <body
+-                           cz-shortcut-listen="true"
+                          >
+                            ...
+                              <AppShellMediaStyles navbar={undefined} header={{height:70}} aside={undefined} ...>
+                                <InlineStyles media={[...]} styles={{...}} selector=":root">
++                                 <style
++                                   data-mantine-styles="inline"
++                                   nonce={undefined}
++                                   dangerouslySetInnerHTML={{__html:":root{--ap..."}}
++                                 >
+-                                 <div
+-                                   style={{display:"flex",align-items:"center",justify-content:"center",min-height:"100vh"}}
+-                                   className=""
+-                                 >
+                              ...
+                  ...
+

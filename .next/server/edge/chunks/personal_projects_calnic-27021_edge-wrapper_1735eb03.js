@@ -1,0 +1,3 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/personal_projects_calnic-27021_edge-wrapper_1735eb03.js",265,e=>{"use strict";self._ENTRIES||={};let t=Promise.resolve().then(()=>e.i(44311));t.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(t,{get(e,t){if("then"===t)return(t,r)=>e.then(t,r);let r=(...r)=>e.then(e=>(0,e[t])(...r));return r.then=(r,s)=>e.then(e=>e[t]).then(r,s),r}}),e.s([])}]);
+
+//# sourceMappingURL=personal_projects_calnic-27021_edge-wrapper_1735eb03.js.map

@@ -1,0 +1,3 @@
+module.exports=[39272,a=>{"use strict";var b=a.i(11968);function c({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{className:"bg-gray-50",children:a})})}a.s(["default",()=>c,"metadata",0,{title:"Calnic Medical Clinic",description:"Changing Healthcare in Calgary One Patient at a Time"}])}];
+
+//# sourceMappingURL=personal_projects_calnic-27021_app_layout_jsx_fb3eb672._.js.map

@@ -1,11 +1,16 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "name": "calnic",
     "version": "1.0.0",
 =======
     "name": "next-netlify-platform-starter",
     "version": "0.1.0",
 >>>>>>> dceb992 (adding babel-plugin-react-compiler to package.json)
+=======
+    "name": "calnic",
+    "version": "1.0.0",
+>>>>>>> 843435c (feat: adding login with mocked data and adding dashboard with calendar)
     "type": "module",
     "private": true,
     "scripts": {
@@ -16,6 +21,7 @@
         "lint:fix": "eslint --fix"
     },
     "dependencies": {
+<<<<<<< HEAD
 <<<<<<< HEAD
         "@mantine/core": "^8.3.6",
         "@mantine/form": "^8.3.6",
@@ -30,13 +36,24 @@
         "react": "19.2.0",
         "react-big-calendar": "^1.19.4",
 =======
+=======
+        "@mantine/core": "^8.3.6",
+        "@mantine/form": "^8.3.6",
+        "@mantine/hooks": "^8.3.6",
+>>>>>>> 843435c (feat: adding login with mocked data and adding dashboard with calendar)
         "@netlify/blobs": "^10.3.1",
+        "@tabler/icons-react": "^3.35.0",
         "blobshape": "^1.0.0",
         "bright": "^1.0.0",
+        "dayjs": "^1.11.19",
         "markdown-to-jsx": "^7.7.16",
         "next": "^16.0.1",
         "react": "19.2.0",
+<<<<<<< HEAD
 >>>>>>> dceb992 (adding babel-plugin-react-compiler to package.json)
+=======
+        "react-big-calendar": "^1.19.4",
+>>>>>>> 843435c (feat: adding login with mocked data and adding dashboard with calendar)
         "react-dom": "19.2.0",
         "unique-names-generator": "^4.7.1"
     },

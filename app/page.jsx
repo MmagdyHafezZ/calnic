@@ -18,8 +18,11 @@ export default function LoginPage() {
         clearError();
 
         const result = await login(username, password);
+        console.log('Login result:', result);
 
-        if (result.success) {
+        if (result.success && result.role === 'doctor') {
+            router.push('/doctor/dashboard');
+        } else if (result.success && result.role === 'admin') {
             router.push('/dashboard');
         }
     };

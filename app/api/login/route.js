@@ -18,7 +18,8 @@ export async function POST(request) {
             return NextResponse.json({
                 success: true,
                 message: 'Login successful',
-                user: accountWithoutPassword
+                user: accountWithoutPassword,
+                role: account.role
             });
         } else {
             return NextResponse.json(

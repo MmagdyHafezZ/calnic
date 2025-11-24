@@ -11,12 +11,13 @@ const useUIStore = create(
         persist(
             (set, get) => ({
                 calendarView: 'month',
-                currentDate: new Date(2025, 9, 1),
+                currentDate: new Date(),
 
                 searchQuery: '',
 
                 isBookingModalOpen: false,
                 isPatientModalOpen: false,
+                isAppointmentDetailsModalOpen: false,
 
                 isSidebarCollapsed: false,
 
@@ -34,10 +35,29 @@ const useUIStore = create(
                     const { currentDate, calendarView } = get();
                     let newDate;
 
+                    // Determine the unit to navigate by based on the current view
+                    let unit;
+                    switch (calendarView) {
+                        case 'day':
+                            unit = 'day';
+                            break;
+                        case 'week':
+                            unit = 'week';
+                            break;
+                        case 'month':
+                            unit = 'month';
+                            break;
+                        case 'agenda':
+                            unit = 'year';
+                            break;
+                        default:
+                            unit = 'month';
+                    }
+
                     if (action === 'PREV') {
-                        newDate = dayjs(currentDate).subtract(1, calendarView === 'agenda' ? 'year' : calendarView).toDate();
+                        newDate = dayjs(currentDate).subtract(1, unit).toDate();
                     } else if (action === 'NEXT') {
-                        newDate = dayjs(currentDate).add(1, calendarView === 'agenda' ? 'year' : calendarView).toDate();
+                        newDate = dayjs(currentDate).add(1, unit).toDate();
                     } else if (action === 'TODAY') {
                         newDate = new Date();
                     }
@@ -75,11 +95,20 @@ const useUIStore = create(
                     set({ isPatientModalOpen: false }, false, 'ui/closePatientModal');
                 },
 
+                openAppointmentDetailsModal: () => {
+                    set({ isAppointmentDetailsModalOpen: true }, false, 'ui/openAppointmentDetailsModal');
+                },
+
+                closeAppointmentDetailsModal: () => {
+                    set({ isAppointmentDetailsModalOpen: false }, false, 'ui/closeAppointmentDetailsModal');
+                },
+
                 closeAllModals: () => {
                     set(
                         {
                             isBookingModalOpen: false,
                             isPatientModalOpen: false,
+                            isAppointmentDetailsModalOpen: false,
                         },
                         false,
                         'ui/closeAllModals'
@@ -110,6 +139,7 @@ const useUIStore = create(
                             searchQuery: '',
                             isBookingModalOpen: false,
                             isPatientModalOpen: false,
+                            isAppointmentDetailsModalOpen: false,
                             isSidebarCollapsed: false,
                         },
                         false,

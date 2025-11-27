@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { appointments as mockAppointments } from '../data/mock-data';
 import dayjs from 'dayjs';
 
@@ -9,7 +9,8 @@ import dayjs from 'dayjs';
  */
 const useAppointmentsStore = create(
     devtools(
-        (set, get) => ({
+        persist(
+            (set, get) => ({
             appointments: mockAppointments,
             selectedAppointment: null,
             isLoading: false,
@@ -118,6 +119,13 @@ const useAppointmentsStore = create(
                 );
             },
         }),
+        {
+            name: 'appointments-storage',
+            partialize: (state) => ({
+                appointments: state.appointments,
+            }),
+        }
+        ),
         {
             name: 'AppointmentsStore',
             enabled: process.env.NODE_ENV === 'development',

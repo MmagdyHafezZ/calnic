@@ -20,7 +20,8 @@ import {
     TextInput,
     Paper,
     Avatar,
-    ScrollArea
+    ScrollArea,
+    Modal
 } from '@mantine/core';
 import {
     IconCalendar,
@@ -41,7 +42,7 @@ export default function DashboardPage() {
     const router = useRouter();
 
     const { user, isAuthenticated, logout } = useAuthStore();
-    const { appointments, getTodayAppointments } = useAppointmentsStore();
+    const { appointments, getTodayAppointments, selectedAppointment, selectAppointment, clearSelectedAppointment } = useAppointmentsStore();
     const { doctors } = useDoctorsStore();
     const {
         calendarView,
@@ -51,6 +52,9 @@ export default function DashboardPage() {
         setCurrentDate,
         searchQuery,
         setSearchQuery,
+        isAppointmentDetailsModalOpen,
+        openAppointmentDetailsModal,
+        closeAppointmentDetailsModal,
     } = useUIStore();
 
     useEffect(() => {
@@ -62,6 +66,16 @@ export default function DashboardPage() {
     const handleLogout = () => {
         logout();
         router.push('/');
+    };
+
+    const handleSelectEvent = (event) => {
+        selectAppointment(event);
+        openAppointmentDetailsModal();
+    };
+
+    const handleCloseAppointmentModal = () => {
+        closeAppointmentDetailsModal();
+        clearSelectedAppointment();
     };
 
     const eventStyleGetter = (event) => {
@@ -100,6 +114,28 @@ export default function DashboardPage() {
     }
 
     const todayAppointments = getTodayAppointments();
+
+    const getCalendarTitle = () => {
+        const date = dayjs(currentDate);
+        switch (calendarView) {
+            case 'day':
+                return date.format('dddd, MMMM D, YYYY');
+            case 'week':
+                const startOfWeek = date.startOf('week');
+                const endOfWeek = date.endOf('week');
+                if (startOfWeek.month() === endOfWeek.month()) {
+                    return `${startOfWeek.format('MMMM D')} - ${endOfWeek.format('D, YYYY')}`;
+                } else {
+                    return `${startOfWeek.format('MMM D')} - ${endOfWeek.format('MMM D, YYYY')}`;
+                }
+            case 'month':
+                return date.format('MMMM YYYY');
+            case 'agenda':
+                return date.format('YYYY');
+            default:
+                return date.format('MMMM YYYY');
+        }
+    };
 
     return (
         <AppShell header={{ height: 70 }} padding="md">
@@ -174,7 +210,7 @@ export default function DashboardPage() {
                             <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
                                 <IconChevronLeft size={24} />
                             </ActionIcon>
-                            <Title order={2}>{dayjs(currentDate).format('MMMM YYYY')}</Title>
+                            <Title order={2}>{getCalendarTitle()}</Title>
                             <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('NEXT')}>
                                 <IconChevronRight size={24} />
                             </ActionIcon>
@@ -225,9 +261,71 @@ export default function DashboardPage() {
                                 date={currentDate}
                                 onNavigate={(date) => setCurrentDate(date)}
                                 eventPropGetter={eventStyleGetter}
+                                onSelectEvent={handleSelectEvent}
                                 toolbar={false}
                             />
                         </Box>
+
+                        <Modal
+                            opened={isAppointmentDetailsModalOpen}
+                            onClose={handleCloseAppointmentModal}
+                            title="Appointment Details"
+                            size="md"
+                            centered
+                        >
+                            {selectedAppointment && (
+                                <Stack gap="md">
+                                    {selectedAppointment.patientName && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Patient Name</Text>
+                                            <Group gap="xs">
+                                                <Avatar size="md" color="blue">
+                                                    {selectedAppointment.patientName[0]}
+                                                </Avatar>
+                                                <Text size="lg" fw={600}>
+                                                    {selectedAppointment.patientName}
+                                                </Text>
+                                            </Group>
+                                        </Box>
+                                    )}
+
+                                    {selectedAppointment.doctorName && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Doctor</Text>
+                                            <Group gap="xs">
+                                                <IconStethoscope size={20} />
+                                                <Text size="md" fw={500}>
+                                                    {selectedAppointment.doctorName}
+                                                </Text>
+                                            </Group>
+                                        </Box>
+                                    )}
+
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb={4}>Date</Text>
+                                        <Text size="md" fw={500}>
+                                            {dayjs(selectedAppointment.start).format('dddd, MMMM D, YYYY')}
+                                        </Text>
+                                    </Box>
+
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb={4}>Time</Text>
+                                        <Text size="md" fw={500}>
+                                            {dayjs(selectedAppointment.start).format('h:mm A')} - {dayjs(selectedAppointment.end).format('h:mm A')}
+                                        </Text>
+                                    </Box>
+
+                                    {selectedAppointment.type && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Appointment Type</Text>
+                                            <Badge size="lg" variant="light">
+                                                {selectedAppointment.type}
+                                            </Badge>
+                                        </Box>
+                                    )}
+                                </Stack>
+                            )}
+                        </Modal>
                     </Box>
                     <Box style={{ width: '300px', flexShrink: 0 }}>
                         <Stack gap="md" style={{ height: '100%' }}>

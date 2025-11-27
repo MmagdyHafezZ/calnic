@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { doctors as mockDoctors } from '../data/mock-data';
 
 /**
@@ -8,7 +8,8 @@ import { doctors as mockDoctors } from '../data/mock-data';
  */
 const useDoctorsStore = create(
     devtools(
-        (set, get) => ({
+        persist(
+            (set, get) => ({
             doctors: mockDoctors,
             selectedDoctor: null,
             isLoading: false,
@@ -100,6 +101,13 @@ const useDoctorsStore = create(
                 return get().doctors.filter((doc) => doc.name.toLowerCase().includes(term));
             },
         }),
+        {
+            name: 'doctors-storage',
+            partialize: (state) => ({
+                doctors: state.doctors,
+            }),
+        }
+        ),
         {
             name: 'DoctorsStore',
             enabled: process.env.NODE_ENV === 'development',

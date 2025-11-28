@@ -180,6 +180,7 @@ export default function DashboardPage() {
                                 variant="light"
                                 leftSection={<IconPlus size={20} />}
                                 fullWidth
+                                onClick={() => (window.location.href = '/new-patient')}
                             >
                                 Add Patient
                             </Button>

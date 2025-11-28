@@ -34,6 +34,8 @@ const useAppointmentsStore = create(
                     false,
                     'appointments/addAppointment'
                 );
+                console.log('newAppointment', newAppointment, newAppointment.start instanceof Date, newAppointment.end instanceof Date);
+
                 return newAppointment;
             },
 
@@ -121,9 +123,23 @@ const useAppointmentsStore = create(
         }),
         {
             name: 'appointments-storage',
-            partialize: (state) => ({
-                appointments: state.appointments,
-            }),
+    partialize: (state) => ({ appointments: state.appointments }),
+
+    // ← add this
+        deserialize: (str) => {
+            // Parse persisted string and return the plain state object that the store expects.
+            // The persist wrapper stores an object like { state: { ... }, version }.
+            const parsed = JSON.parse(str);
+            const restored = parsed && parsed.state ? parsed.state : parsed;
+            if (restored && Array.isArray(restored.appointments)) {
+                restored.appointments = restored.appointments.map((a) => ({
+                    ...a,
+                    start: a.start ? new Date(a.start) : a.start,
+                    end: a.end ? new Date(a.end) : a.end,
+                }));
+            }
+            return restored;
+        },
         }
         ),
         {

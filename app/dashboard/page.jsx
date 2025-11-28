@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, dayjsLocalizer } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -19,7 +20,8 @@ import {
     TextInput,
     Paper,
     Avatar,
-    ScrollArea
+    ScrollArea,
+    Modal
 } from '@mantine/core';
 import {
     IconCalendar,
@@ -32,44 +34,49 @@ import {
     IconStethoscope,
     IconUsers
 } from '@tabler/icons-react';
-import { appointments, doctors } from '../../data/mock-data';
+import { useAuthStore, useAppointmentsStore, useDoctorsStore, useUIStore } from '../../store';
 
 const localizer = dayjsLocalizer(dayjs);
 
 export default function DashboardPage() {
-    const [user, setUser] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const userStr = localStorage.getItem('user');
-            return userStr ? JSON.parse(userStr) : null;
-        }
-        return null;
-    });
-    const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 1));
-    const [view, setView] = useState('month');
+    const router = useRouter();
+
+    const { user, isAuthenticated, logout } = useAuthStore();
+    const { appointments, getTodayAppointments, selectedAppointment, selectAppointment, clearSelectedAppointment } = useAppointmentsStore();
+    const { doctors } = useDoctorsStore();
+    const {
+        calendarView,
+        currentDate,
+        setCalendarView,
+        navigateCalendar,
+        setCurrentDate,
+        searchQuery,
+        setSearchQuery,
+        isAppointmentDetailsModalOpen,
+        openAppointmentDetailsModal,
+        closeAppointmentDetailsModal,
+    } = useUIStore();
 
     useEffect(() => {
-        if (!user && typeof window !== 'undefined') {
-            window.location.href = '/';
+        if (!isAuthenticated) {
+            router.push('/');
         }
-    }, [user]);
+    }, [isAuthenticated, router]);
 
     const handleLogout = () => {
-        localStorage.removeItem('user');
-        window.location.href = '/';
+        logout();
+        router.push('/');
     };
 
-    const handleNavigate = useCallback(
-        (action) => {
-            if (action === 'PREV') {
-                setCurrentDate(dayjs(currentDate).subtract(1, 'month').toDate());
-            } else if (action === 'NEXT') {
-                setCurrentDate(dayjs(currentDate).add(1, 'month').toDate());
-            } else if (action === 'TODAY') {
-                setCurrentDate(new Date());
-            }
-        },
-        [currentDate]
-    );
+    const handleSelectEvent = (event) => {
+        selectAppointment(event);
+        openAppointmentDetailsModal();
+    };
+
+    const handleCloseAppointmentModal = () => {
+        closeAppointmentDetailsModal();
+        clearSelectedAppointment();
+    };
 
     const eventStyleGetter = (event) => {
         let backgroundColor = '#fef3c7';
@@ -98,7 +105,7 @@ export default function DashboardPage() {
         };
     };
 
-    if (!user) {
+    if (!isAuthenticated || !user) {
         return (
             <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
                 <Text c="dimmed">Loading...</Text>
@@ -106,9 +113,29 @@ export default function DashboardPage() {
         );
     }
 
-    const todayAppointments = appointments.filter(
-        (apt) => apt.patientName && dayjs(apt.start).format('YYYY-MM-DD') === '2025-10-28'
-    );
+    const todayAppointments = getTodayAppointments();
+
+    const getCalendarTitle = () => {
+        const date = dayjs(currentDate);
+        switch (calendarView) {
+            case 'day':
+                return date.format('dddd, MMMM D, YYYY');
+            case 'week':
+                const startOfWeek = date.startOf('week');
+                const endOfWeek = date.endOf('week');
+                if (startOfWeek.month() === endOfWeek.month()) {
+                    return `${startOfWeek.format('MMMM D')} - ${endOfWeek.format('D, YYYY')}`;
+                } else {
+                    return `${startOfWeek.format('MMM D')} - ${endOfWeek.format('MMM D, YYYY')}`;
+                }
+            case 'month':
+                return date.format('MMMM YYYY');
+            case 'agenda':
+                return date.format('YYYY');
+            default:
+                return date.format('MMMM YYYY');
+        }
+    };
 
     return (
         <AppShell header={{ height: 70 }} padding="md">
@@ -181,11 +208,11 @@ export default function DashboardPage() {
 
                     <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <Group justify="center" mb="md" gap="xl">
-                            <ActionIcon variant="subtle" size="lg" onClick={() => handleNavigate('PREV')}>
+                            <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
                                 <IconChevronLeft size={24} />
                             </ActionIcon>
-                            <Title order={2}>{dayjs(currentDate).format('MMMM YYYY')}</Title>
-                            <ActionIcon variant="subtle" size="lg" onClick={() => handleNavigate('NEXT')}>
+                            <Title order={2}>{getCalendarTitle()}</Title>
+                            <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('NEXT')}>
                                 <IconChevronRight size={24} />
                             </ActionIcon>
                         </Group>
@@ -193,29 +220,29 @@ export default function DashboardPage() {
                         <Group justify="center" mb="md">
                             <Button.Group>
                                 <Button
-                                    variant={view === 'day' ? 'filled' : 'light'}
-                                    onClick={() => setView('day')}
+                                    variant={calendarView === 'day' ? 'filled' : 'light'}
+                                    onClick={() => setCalendarView('day')}
                                     size="sm"
                                 >
                                     Day
                                 </Button>
                                 <Button
-                                    variant={view === 'week' ? 'filled' : 'light'}
-                                    onClick={() => setView('week')}
+                                    variant={calendarView === 'week' ? 'filled' : 'light'}
+                                    onClick={() => setCalendarView('week')}
                                     size="sm"
                                 >
                                     Week
                                 </Button>
                                 <Button
-                                    variant={view === 'month' ? 'filled' : 'light'}
-                                    onClick={() => setView('month')}
+                                    variant={calendarView === 'month' ? 'filled' : 'light'}
+                                    onClick={() => setCalendarView('month')}
                                     size="sm"
                                 >
                                     Month
                                 </Button>
                                 <Button
-                                    variant={view === 'agenda' ? 'filled' : 'light'}
-                                    onClick={() => setView('agenda')}
+                                    variant={calendarView === 'agenda' ? 'filled' : 'light'}
+                                    onClick={() => setCalendarView('agenda')}
                                     size="sm"
                                 >
                                     Year
@@ -230,14 +257,76 @@ export default function DashboardPage() {
                                 startAccessor="start"
                                 endAccessor="end"
                                 style={{ height: '100%' }}
-                                view={view}
-                                onView={setView}
+                                view={calendarView}
+                                onView={setCalendarView}
                                 date={currentDate}
                                 onNavigate={(date) => setCurrentDate(date)}
                                 eventPropGetter={eventStyleGetter}
+                                onSelectEvent={handleSelectEvent}
                                 toolbar={false}
                             />
                         </Box>
+
+                        <Modal
+                            opened={isAppointmentDetailsModalOpen}
+                            onClose={handleCloseAppointmentModal}
+                            title="Appointment Details"
+                            size="md"
+                            centered
+                        >
+                            {selectedAppointment && (
+                                <Stack gap="md">
+                                    {selectedAppointment.patientName && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Patient Name</Text>
+                                            <Group gap="xs">
+                                                <Avatar size="md" color="blue">
+                                                    {selectedAppointment.patientName[0]}
+                                                </Avatar>
+                                                <Text size="lg" fw={600}>
+                                                    {selectedAppointment.patientName}
+                                                </Text>
+                                            </Group>
+                                        </Box>
+                                    )}
+
+                                    {selectedAppointment.doctorName && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Doctor</Text>
+                                            <Group gap="xs">
+                                                <IconStethoscope size={20} />
+                                                <Text size="md" fw={500}>
+                                                    {selectedAppointment.doctorName}
+                                                </Text>
+                                            </Group>
+                                        </Box>
+                                    )}
+
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb={4}>Date</Text>
+                                        <Text size="md" fw={500}>
+                                            {dayjs(selectedAppointment.start).format('dddd, MMMM D, YYYY')}
+                                        </Text>
+                                    </Box>
+
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb={4}>Time</Text>
+                                        <Text size="md" fw={500}>
+                                            {dayjs(selectedAppointment.start).format('h:mm A')} - {dayjs(selectedAppointment.end).format('h:mm A')}
+                                        </Text>
+                                    </Box>
+
+                                    {selectedAppointment.type && (
+                                        <Box>
+                                            <Text size="sm" c="dimmed" mb={4}>Appointment Type</Text>
+                                            <Badge size="lg" variant="light">
+                                                {selectedAppointment.type}
+                                            </Badge>
+                                        </Box>
+                                    )}
+                                </Stack>
+                            )}
+                        </Modal>
                     </Box>
                     <Box style={{ width: '300px', flexShrink: 0 }}>
                         <Stack gap="md" style={{ height: '100%' }}>
@@ -245,6 +334,8 @@ export default function DashboardPage() {
                                 placeholder="Search Patient"
                                 leftSection={<IconSearch size={16} />}
                                 radius="xl"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                             />
 
                             <Paper p="md" withBorder style={{ flex: 1 }}>

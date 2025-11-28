@@ -1,41 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { TextInput, PasswordInput, Button, Title, Text, Box, Stack, Flex, Alert, Anchor } from '@mantine/core';
 import { IconUser, IconLock, IconAlertCircle, IconCircleCheck } from '@tabler/icons-react';
+import { useAuthStore } from '../store';
 
 export default function LoginPage() {
+    const router = useRouter();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+
+    const { login, isLoading, error, clearError } = useAuthStore();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setLoading(true);
+        clearError();
 
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
+        const result = await login(username, password);
 
-            const data = await response.json();
-
-            if (data.success) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-                window.location.href = '/dashboard';
-            } else {
-                setError(data.message);
-            }
-        } catch (err) {
-            setError('An error occurred. Please try again.');
-        } finally {
-            setLoading(false);
+        if (result.success) {
+            router.push('/dashboard');
         }
     };
 
@@ -155,7 +140,7 @@ export default function LoginPage() {
                                 type="submit"
                                 size="lg"
                                 fullWidth
-                                loading={loading}
+                                loading={isLoading}
                                 radius="xl"
                                 styles={{
                                     root: {
@@ -165,7 +150,7 @@ export default function LoginPage() {
                                     }
                                 }}
                             >
-                                {loading ? 'Logging in...' : 'Login'}
+                                {isLoading ? 'Logging in...' : 'Login'}
                             </Button>
                         </Stack>
                     </form>

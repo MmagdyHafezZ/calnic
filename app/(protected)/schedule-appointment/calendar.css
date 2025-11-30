@@ -7,7 +7,6 @@
     font-weight: 600;
     font-size: 14px;
     color: #374151;
-
 }
 
 .rbc-month-view {
@@ -98,14 +97,13 @@
 
 /* Remove the All-Day row completely */
 .rbc-allday-cell {
-  display: none !important;
-  height: 0 !important;
-  padding: 0 !important;
-  border: none !important;
+    display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 /* Remove the leftover bottom border of the entire all-day section */
 .rbc-time-header.rbc-overflowing {
-  border-bottom: none !important;
+    border-bottom: none !important;
 }
-

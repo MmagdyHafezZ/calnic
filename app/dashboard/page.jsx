@@ -1,7 +1,6 @@
 'use client';
-
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar, dayjsLocalizer } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -171,7 +170,7 @@ export default function DashboardPage() {
                 <Box style={{ display: 'flex', gap: '1rem', height: 'calc(100vh - 100px)' }}>
                     <Box style={{ width: '220px', flexShrink: 0 }}>
                         <Stack gap="md">
-                            <Button size="lg" radius="xl" leftSection={<IconCalendar size={20} />} fullWidth>
+                            <Button size="lg" radius="xl" leftSection={<IconCalendar size={20} />} fullWidth onClick={() => router.push('/book-appointment')}>
                                 Book
                             </Button>
                             <Button
@@ -250,9 +249,14 @@ export default function DashboardPage() {
                         </Group>
 
                         <Box style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', padding: '1rem' }}>
+                            {/** Ensure start/end are Date objects even if persisted as strings */}
                             <Calendar
                                 localizer={localizer}
-                                events={appointments}
+                                events={useMemo(() => (appointments || []).map((a) => ({
+                                    ...a,
+                                    start: a.start && !(a.start instanceof Date) ? new Date(a.start) : a.start,
+                                    end: a.end && !(a.end instanceof Date) ? new Date(a.end) : a.end,
+                                })), [appointments])}
                                 startAccessor="start"
                                 endAccessor="end"
                                 style={{ height: '100%' }}
@@ -263,6 +267,8 @@ export default function DashboardPage() {
                                 eventPropGetter={eventStyleGetter}
                                 onSelectEvent={handleSelectEvent}
                                 toolbar={false}
+                                min={new Date(2025, 9, 1, 8, 0)}
+                                max={new Date(2025, 9, 1, 18, 0)}
                             />
                         </Box>
 

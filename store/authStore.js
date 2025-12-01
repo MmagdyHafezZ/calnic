@@ -21,9 +21,9 @@ const useAuthStore = create(
                         const response = await fetch('/api/login', {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
+                                'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ username, password }),
+                            body: JSON.stringify({ username, password })
                         });
 
                         const data = await response.json();
@@ -34,7 +34,7 @@ const useAuthStore = create(
                                     user: data.user,
                                     isAuthenticated: true,
                                     isLoading: false,
-                                    error: null,
+                                    error: null
                                 },
                                 false,
                                 'auth/login/success'
@@ -44,7 +44,7 @@ const useAuthStore = create(
                             set(
                                 {
                                     error: data.message,
-                                    isLoading: false,
+                                    isLoading: false
                                 },
                                 false,
                                 'auth/login/error'
@@ -56,7 +56,7 @@ const useAuthStore = create(
                         set(
                             {
                                 error: errorMessage,
-                                isLoading: false,
+                                isLoading: false
                             },
                             false,
                             'auth/login/error'
@@ -70,7 +70,7 @@ const useAuthStore = create(
                         {
                             user: null,
                             isAuthenticated: false,
-                            error: null,
+                            error: null
                         },
                         false,
                         'auth/logout'
@@ -81,7 +81,7 @@ const useAuthStore = create(
                     set(
                         {
                             user,
-                            isAuthenticated: !!user,
+                            isAuthenticated: !!user
                         },
                         false,
                         'auth/setUser'
@@ -93,19 +93,19 @@ const useAuthStore = create(
                 },
 
                 getUser: () => get().user,
-                isUserAuthenticated: () => get().isAuthenticated,
+                isUserAuthenticated: () => get().isAuthenticated
             }),
             {
                 name: 'auth-storage',
                 partialize: (state) => ({
                     user: state.user,
-                    isAuthenticated: state.isAuthenticated,
-                }),
+                    isAuthenticated: state.isAuthenticated
+                })
             }
         ),
         {
             name: 'AuthStore',
-            enabled: process.env.NODE_ENV === 'development',
+            enabled: process.env.NODE_ENV === 'development'
         }
     )
 );

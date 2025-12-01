@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextInput, PasswordInput, Button, Title, Text, Box, Stack, Flex, Alert, Anchor } from '@mantine/core';
 import { IconUser, IconLock, IconAlertCircle, IconCircleCheck } from '@tabler/icons-react';
@@ -12,6 +12,11 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
 
     const { login, isLoading, error, clearError } = useAuthStore();
+    useEffect(() => {
+        if (useAuthStore.getState().isAuthenticated) {
+            router.push('/dashboard');
+        }
+    }, [router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

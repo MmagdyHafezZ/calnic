@@ -18,5 +18,22 @@ export const theme = {
     headings: {
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
         fontWeight: '700'
-    }
+    },
+    components: {
+    TextInput: {
+      styles: {
+        input: {
+          backgroundColor: '#E9EFF6',  // Light lavender
+        },
+      },
+    },
+
+    Textarea: {
+      styles: {
+        input: {
+          backgroundColor: '#E9EFF6',
+        },
+      },
+    },
+}
 };

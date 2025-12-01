@@ -11,9 +11,11 @@ const useUIStore = create(
         persist(
             (set, get) => ({
                 calendarView: 'month',
-                currentDate: new Date(),
+                currentDate: null,
 
                 searchQuery: '',
+                patientSearchQuery: '',
+                selectedDoctors: [],
 
                 isBookingModalOpen: false,
                 isPatientModalOpen: false,
@@ -79,6 +81,32 @@ const useUIStore = create(
                     set({ searchQuery: '' }, false, 'ui/clearSearch');
                 },
 
+                setPatientSearchQuery: (query) => {
+                    set({ patientSearchQuery: query }, false, 'ui/setPatientSearchQuery');
+                },
+
+                clearPatientSearch: () => {
+                    set({ patientSearchQuery: '' }, false, 'ui/clearPatientSearch');
+                },
+
+                toggleSelectedDoctor: (doctorId) => {
+                    set((state) => {
+                        const isSelected = state.selectedDoctors.includes(doctorId);
+                        const newSelectedDoctors = isSelected
+                            ? state.selectedDoctors.filter(id => id !== doctorId)
+                            : [...state.selectedDoctors, doctorId];
+                        return { selectedDoctors: newSelectedDoctors };
+                    }, false, 'ui/toggleSelectedDoctor');
+                },
+
+                clearSelectedDoctors: () => {
+                    set({ selectedDoctors: [] }, false, 'ui/clearSelectedDoctors');
+                },
+
+                selectAllDoctors: (doctorIds) => {
+                    set({ selectedDoctors: doctorIds }, false, 'ui/selectAllDoctors');
+                },
+
                 openBookingModal: () => {
                     set({ isBookingModalOpen: true }, false, 'ui/openBookingModal');
                 },
@@ -135,8 +163,10 @@ const useUIStore = create(
                     set(
                         {
                             calendarView: 'month',
-                            currentDate: new Date(),
+                            currentDate: null,
                             searchQuery: '',
+                            patientSearchQuery: '',
+                            selectedDoctors: [],
                             isBookingModalOpen: false,
                             isPatientModalOpen: false,
                             isAppointmentDetailsModalOpen: false,
@@ -153,6 +183,7 @@ const useUIStore = create(
                     calendarView: state.calendarView,
                     theme: state.theme,
                     isSidebarCollapsed: state.isSidebarCollapsed,
+                    // Don't persist currentDate to avoid hydration issues
                 }),
             }
         ),

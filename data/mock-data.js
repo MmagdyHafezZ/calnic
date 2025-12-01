@@ -1,138 +1,78 @@
 import dayjs from 'dayjs';
 
 export const doctors = [
-    { id: 1, name: 'Dr. Ahmed', status: 'Appt', color: 'green' },
-    { id: 2, name: 'Dr. Turner', status: 'Operating', color: 'pink' },
-    { id: 3, name: 'Dr. Mike', status: 'In Break', color: 'yellow' },
-    { id: 4, name: 'Dr. Joel', status: 'Remote', color: 'blue' },
+    { id: 1, name: 'Dr. Ahmed', status: 'Appt', color: '#10b981', colorName: 'emerald' }, // emerald green
+    { id: 2, name: 'Dr. Turner', status: 'Operating', color: '#ec4899', colorName: 'pink' }, // pink
+    { id: 3, name: 'Dr. Mike', status: 'In Break', color: '#f59e0b', colorName: 'amber' }, // amber yellow
+    { id: 4, name: 'Dr. Joel', status: 'Remote', color: '#3b82f6', colorName: 'blue' } // blue
 ];
 
-export const appointments = [
-    {
-        id: 1,
-        title: 'Oliver',
-        patientName: 'Oliver',
-        doctorName: 'Dr. Ahmed',
-        start: dayjs('2025-10-28T08:20:00').toDate(),
-        end: dayjs('2025-10-28T08:40:00').toDate(),
-        type: 'Morning Appt Available',
-    },
-    {
-        id: 2,
-        title: 'James',
-        patientName: 'James',
-        doctorName: 'Dr. Turner',
-        start: dayjs('2025-10-28T08:20:00').toDate(),
-        end: dayjs('2025-10-28T08:40:00').toDate(),
-        type: 'Morning Appt Available',
-    },
-    {
-        id: 3,
-        title: 'James',
-        patientName: 'James',
-        doctorName: 'Dr. Turner',
-        start: dayjs('2025-10-28T08:40:00').toDate(),
-        end: dayjs('2025-10-28T09:00:00').toDate(),
-        type: 'Afternoon Appt Full',
-    },
-    {
-        id: 4,
-        title: 'Badway',
-        patientName: 'Badway',
-        doctorName: 'Dr. Joel',
-        start: dayjs('2025-10-28T08:40:00').toDate(),
-        end: dayjs('2025-10-28T09:00:00').toDate(),
-        type: 'Afternoon Appt Full',
-    },
-    {
-        id: 5,
-        title: 'James',
-        patientName: 'James',
-        doctorName: 'Dr. Turner',
-        start: dayjs('2025-10-28T09:00:00').toDate(),
-        end: dayjs('2025-10-28T09:20:00').toDate(),
-        type: 'Morning Appt Available',
-    },
-    {
-        id: 6,
-        title: 'James',
-        patientName: 'James',
-        doctorName: 'Dr. Turner',
-        start: dayjs('2025-10-28T09:40:00').toDate(),
-        end: dayjs('2025-10-28T10:00:00').toDate(),
-        type: 'Morning Appt Available',
-    },
-    {
-        id: 7,
-        title: 'Badway',
-        patientName: 'Badway',
-        doctorName: 'Dr. Joel',
-        start: dayjs('2025-10-28T10:00:00').toDate(),
-        end: dayjs('2025-10-28T10:20:00').toDate(),
-        type: 'Afternoon Appt Available',
-    },
-    {
-        id: 8,
-        title: 'Morning Appt Available',
-        start: dayjs('2025-10-28T09:00:00').toDate(),
-        end: dayjs('2025-10-28T12:00:00').toDate(),
-        type: 'Morning Appt Available',
-        allDay: false,
-    },
-    {
-        id: 9,
-        title: 'Afternoon Appt Full',
-        start: dayjs('2025-10-28T14:00:00').toDate(),
-        end: dayjs('2025-10-28T17:00:00').toDate(),
-        type: 'Afternoon Appt Full',
-        allDay: false,
-    },
-    {
-        id: 10,
-        title: 'Morning Appt Available',
-        start: dayjs('2025-10-29T09:00:00').toDate(),
-        end: dayjs('2025-10-29T12:00:00').toDate(),
-        type: 'Morning Appt Available',
-        allDay: false,
-    },
-    {
-        id: 11,
-        title: 'Afternoon Appt Full',
-        start: dayjs('2025-10-29T14:00:00').toDate(),
-        end: dayjs('2025-10-29T17:00:00').toDate(),
-        type: 'Afternoon Appt Full',
-        allDay: false,
-    },
-    {
-        id: 12,
-        title: 'Morning Appt Available',
-        start: dayjs('2025-10-30T09:00:00').toDate(),
-        end: dayjs('2025-10-30T12:00:00').toDate(),
-        type: 'Morning Appt Available',
-        allDay: false,
-    },
-    {
-        id: 13,
-        title: 'Afternoon Appt Available',
-        start: dayjs('2025-10-30T14:00:00').toDate(),
-        end: dayjs('2025-10-30T17:00:00').toDate(),
-        type: 'Afternoon Appt Available',
-        allDay: false,
-    },
-    {
-        id: 14,
-        title: 'Morning Appt Available',
-        start: dayjs('2025-10-31T09:00:00').toDate(),
-        end: dayjs('2025-10-31T12:00:00').toDate(),
-        type: 'Morning Appt Available',
-        allDay: false,
-    },
-    {
-        id: 15,
-        title: 'Afternoon Appt Available',
-        start: dayjs('2025-10-31T14:00:00').toDate(),
-        end: dayjs('2025-10-31T17:00:00').toDate(),
-        type: 'Afternoon Appt Available',
-        allDay: false,
-    },
+export const patients = [
+    { id: 1, name: 'Oliver' },
+    { id: 2, name: 'James' },
+    { id: 3, name: 'Badway' },
+    { id: 4, name: 'Sarah' },
+    { id: 5, name: 'Michael' },
+    { id: 6, name: 'Emma' },
+    { id: 7, name: 'William' },
+    { id: 8, name: 'Sophia' },
+    { id: 9, name: 'Lucas' },
+    { id: 10, name: 'Olivia' }
 ];
+
+// Helpers
+const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+// Generate a random date inside the year
+const randomDateInYear = (year) => {
+    const month = randInt(0, 11);
+    const day = randInt(1, dayjs(`${year}-${month + 1}-01`).daysInMonth());
+    return dayjs(`${year}-${month + 1}-${day}`);
+};
+
+// Generate random time within a clinic working schedule
+const randomTimeOfDay = () => {
+    const hour = randInt(8, 16); // 08:00 → 16:00 start times
+    const minuteSlot = randInt(0, 2); // 0, 20, 40 minutes
+    const minute = minuteSlot * 20;
+    return { hour, minute };
+};
+
+export const generateRandomYearAppointments = (count = 150, year = 2025) => {
+    const result = [];
+
+    for (let i = 0; i < count; i++) {
+        const patient = rand(patients);
+        const doctor = rand(doctors);
+
+        // generate a random date in the year
+        let base = randomDateInYear(year);
+
+        // random time of day
+        const { hour, minute } = randomTimeOfDay();
+        const start = base.hour(hour).minute(minute).second(0);
+        const end = start.add(20, 'minute');
+
+        result.push({
+            id: start.valueOf(),
+            patientId: patient.id,
+            patientName: patient.name.toLowerCase(),
+
+            doctorId: doctor.id,
+            doctorName: doctor.name,
+
+            title: `${patient.name} - Appointment`,
+            start: start.toISOString(),
+            end: end.toISOString(),
+
+            type: 'Appointment',
+            notes: ''
+        });
+    }
+
+    return result;
+};
+
+export const appointments = generateRandomYearAppointments(800, 2025);

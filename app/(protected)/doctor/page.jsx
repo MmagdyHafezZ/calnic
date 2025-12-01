@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Button, Card, PasswordInput, Stack, Text, TextInput, Title, Alert } from '@mantine/core';
 import { IconAlertCircle, IconLock, IconUser } from '@tabler/icons-react';
-import { useAuthStore } from '../../store';
+import { useAuthStore } from '../../../store';
 
 export default function DoctorLoginPage() {
     const router = useRouter();

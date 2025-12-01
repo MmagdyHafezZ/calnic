@@ -7,14 +7,14 @@ import dayjs from 'dayjs';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { useAuthStore, useAppointmentsStore, useDoctorsStore } from '../../../store';
+import { useAuthStore, useAppointmentsStore, useDoctorsStore } from '../../../../store';
 
 const localizer = dayjsLocalizer(dayjs);
 
 export default function DoctorAvailabilityPage() {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
-    const { addDoctorTimeOff, appointments } = useAppointmentsStore();
+    const { addDoctorTimeOff, deleteAppointment, appointments } = useAppointmentsStore();
     const { doctors } = useDoctorsStore();
 
     const [start, setStart] = useState('');
@@ -46,6 +46,12 @@ export default function DoctorAvailabilityPage() {
                 end: apt.end instanceof Date ? apt.end : new Date(apt.end)
             }));
     }, [appointments, doctor]);
+
+    const doctorTimeOff = useMemo(() => {
+        return doctorEvents
+            .filter((ev) => ev.isTimeOff)
+            .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf());
+    }, [doctorEvents]);
 
     const hasConflict = useCallback(
         (startDate, endDate) => {
@@ -150,7 +156,7 @@ export default function DoctorAvailabilityPage() {
         <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
             <Box style={{ display: 'flex', gap: '1rem', height: '100%', padding: '1rem' }}>
                 <Box style={{ width: '360px', flexShrink: 0 }}>
-                    <Card withBorder radius="md" shadow="sm">
+                    <Card withBorder radius="md" shadow="sm" mb="md">
                         <Stack gap="sm">
                             <Title order={3}>{doctorLabel}</Title>
                             {error && (
@@ -219,12 +225,49 @@ export default function DoctorAvailabilityPage() {
                                         Your time off has been added to the schedule.
                                     </Text>
                                     <Group justify="flex-end">
+                                        <Button variant="light" onClick={resetForm}>
+                                            Add more
+                                        </Button>
                                         <Button onClick={() => router.push('/doctor/dashboard')}>
                                             Back to schedule
                                         </Button>
                                     </Group>
                                 </Stack>
                             )}
+                        </Stack>
+                    </Card>
+
+                    <Card withBorder radius="md" shadow="sm">
+                        <Stack gap="sm">
+                            <Title order={4}>Unavailable blocks</Title>
+                            {doctorTimeOff.length === 0 && <Text c="dimmed">No time off added.</Text>}
+                            {doctorTimeOff.map((block) => (
+                                <Paper key={block.id} withBorder p="sm">
+                                    <Stack gap={2}>
+                                        <Text fw={600} size="sm">
+                                            {dayjs(block.start).format('MMM D, YYYY h:mm A')}
+                                        </Text>
+                                        <Text size="xs" c="dimmed">
+                                            to {dayjs(block.end).format('MMM D, YYYY h:mm A')}
+                                        </Text>
+                                        {block.reason && (
+                                            <Badge color="gray" variant="light" size="sm">
+                                                {block.reason}
+                                            </Badge>
+                                        )}
+                                        <Group justify="flex-end">
+                                            <Button
+                                                size="xs"
+                                                variant="light"
+                                                color="red"
+                                                onClick={() => deleteAppointment(block.id)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </Group>
+                                    </Stack>
+                                </Paper>
+                            ))}
                         </Stack>
                     </Card>
                 </Box>
@@ -301,9 +344,6 @@ export default function DoctorAvailabilityPage() {
                             toolbar={false}
                             onSelectSlot={selectSlot}
                         />
-                        <Text size="sm" c="dimmed" mt="xs">
-                            Select a slot on the calendar to block time off (defaults to 60 minutes).
-                        </Text>
                     </Paper>
                 </Box>
             </Box>

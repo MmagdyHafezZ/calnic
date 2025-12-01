@@ -3,8 +3,8 @@
 import { AppShell, Button, Group, Menu, Title, Badge } from '@mantine/core';
 import { IconMenu2, IconUser, IconStethoscope } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import useAuthStore from '../../store/authStore';
-import ProtectedLayout from '../../components/ProtectedLayer';
+import useAuthStore from '../../../store/authStore';
+import ProtectedLayout from '../../../components/ProtectedLayer';
 
 export default function DoctorLayout({ children }) {
     const router = useRouter();

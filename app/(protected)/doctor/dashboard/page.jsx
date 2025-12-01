@@ -7,7 +7,7 @@ import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { AppShell, Box, Button, Card, Group, Stack, Title, Select, Text, Paper, Badge } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { useAppointmentsStore, useDoctorsStore, usePatientsStore, useAuthStore } from '../../../store';
+import { useAppointmentsStore, useDoctorsStore, usePatientsStore, useAuthStore } from '../../../../store';
 
 const localizer = dayjsLocalizer(dayjs);
 

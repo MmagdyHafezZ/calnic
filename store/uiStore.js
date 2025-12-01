@@ -25,6 +25,9 @@ const useUIStore = create(
 
                 theme: 'light',
 
+                diagnosticRecommendation: null,
+                diagnosticRanking: [],
+
                 setCalendarView: (view) => {
                     set({ calendarView: view }, false, 'ui/setCalendarView');
                 },
@@ -159,6 +162,18 @@ const useUIStore = create(
                     set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' }), false, 'ui/toggleTheme');
                 },
 
+                setDiagnosticRecommendation: (recommendation) => {
+                    set({ diagnosticRecommendation: recommendation }, false, 'ui/setDiagnosticRecommendation');
+                },
+
+                setDiagnosticRanking: (ranking) => {
+                    set({ diagnosticRanking: ranking }, false, 'ui/setDiagnosticRanking');
+                },
+
+                clearDiagnosticRecommendation: () => {
+                    set({ diagnosticRecommendation: null, diagnosticRanking: [] }, false, 'ui/clearDiagnosticRecommendation');
+                },
+
                 resetUI: () => {
                     set(
                         {
@@ -171,6 +186,8 @@ const useUIStore = create(
                             isPatientModalOpen: false,
                             isAppointmentDetailsModalOpen: false,
                             isSidebarCollapsed: false,
+                            diagnosticRecommendation: null,
+                            diagnosticRanking: [],
                         },
                         false,
                         'ui/resetUI'

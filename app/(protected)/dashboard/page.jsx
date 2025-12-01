@@ -102,6 +102,11 @@ export default function DashboardPage() {
         let color = '#374151'; // default dark gray
         let border = 'none';
 
+        const isSelected =
+            selectedAppointment &&
+            ((selectedAppointment.id && selectedAppointment.id === event.id) ||
+                (selectedAppointment.start && event.start && dayjs(selectedAppointment.start).isSame(event.start)));
+
         // Special styling for time-off blocks
         if (event.isTimeOff) {
             const doctor = doctors.find((d) => d.id === event.doctorId);
@@ -124,6 +129,20 @@ export default function DashboardPage() {
                     padding: '2px 4px',
                     fontWeight: '600',
                     fontStyle: 'italic'
+                }
+            };
+        }
+
+        if (isSelected) {
+            return {
+                style: {
+                    backgroundColor: '#bfdbfe',
+                    color: '#1d4ed8',
+                    border: '2px solid #2563eb',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    padding: '2px 4px',
+                    fontWeight: 600
                 }
             };
         }
@@ -285,7 +304,16 @@ export default function DashboardPage() {
     return (
         <>
             <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
-                <Box style={{ display: 'flex', gap: '1rem', height: '100%', width: '100%', overflow: 'hidden', minHeight: 0 }}>
+                <Box
+                    style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        height: '100%',
+                        width: '100%',
+                        overflow: 'hidden',
+                        minHeight: 0
+                    }}
+                >
                     <Box style={{ width: '220px', flexShrink: 0 }}>
                         <Stack gap="md">
                             <Button
@@ -303,6 +331,7 @@ export default function DashboardPage() {
                                 variant="light"
                                 leftSection={<IconPlus size={20} />}
                                 fullWidth
+                                onClick={() => (window.location.href = '/new-patient')}
                             >
                                 Add Patient
                             </Button>
@@ -357,7 +386,9 @@ export default function DashboardPage() {
                         </Stack>
                     </Box>
 
-                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                    <Box
+                        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+                    >
                         <Group justify="center" mb="md" gap="xl">
                             <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
                                 <IconChevronLeft size={24} />
@@ -401,7 +432,15 @@ export default function DashboardPage() {
                             </Button.Group>
                         </Group>
 
-                        <Box style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', padding: '1rem', minHeight: 0 }}>
+                        <Box
+                            style={{
+                                flex: 1,
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                padding: '1rem',
+                                minHeight: 0
+                            }}
+                        >
                             {/** Ensure start/end are Date objects even if persisted as strings */}
                             <Calendar
                                 localizer={localizer}
@@ -580,15 +619,29 @@ export default function DashboardPage() {
                                 onChange={(e) => setPatientSearchQuery(e.target.value)}
                             />
 
-                            <Paper p="md" withBorder style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                            <Paper
+                                p="md"
+                                withBorder
+                                style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                            >
                                 <Title order={4} mb="md">
                                     Appointments
                                 </Title>
                                 <ScrollArea style={{ flex: 1 }}>
                                     {currentDate && todayAppointments.length !== 0 ? (
                                         <Stack gap="sm">
-                                            {todayAppointments.map((apt) => (
-                                                <Paper key={apt.id} p="sm" withBorder>
+                                            {todayAppointments.map((apt, idx) => (
+                                                <Paper
+                                                    key={`${apt.id ?? 'apt'}-${apt.start ? new Date(apt.start).getTime() : 'nostart'}-${idx}`}
+                                                    p="sm"
+                                                    withBorder
+                                                    onClick={() => {
+                                                        setCalendarView('day');
+                                                        if (apt.start) setCurrentDate(new Date(apt.start));
+                                                        selectAppointment(apt);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
                                                     <Group gap="xs" mb="xs">
                                                         <Avatar size="sm" color="blue">
                                                             {apt.patientName[0]}

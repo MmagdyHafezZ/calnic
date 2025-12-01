@@ -102,6 +102,11 @@ export default function DashboardPage() {
         let color = '#374151'; // default dark gray
         let border = 'none';
 
+        const isSelected =
+            selectedAppointment &&
+            ((selectedAppointment.id && selectedAppointment.id === event.id) ||
+                (selectedAppointment.start && event.start && dayjs(selectedAppointment.start).isSame(event.start)));
+
         // Special styling for time-off blocks
         if (event.isTimeOff) {
             const doctor = doctors.find((d) => d.id === event.doctorId);
@@ -124,6 +129,20 @@ export default function DashboardPage() {
                     padding: '2px 4px',
                     fontWeight: '600',
                     fontStyle: 'italic'
+                }
+            };
+        }
+
+        if (isSelected) {
+            return {
+                style: {
+                    backgroundColor: '#bfdbfe',
+                    color: '#1d4ed8',
+                    border: '2px solid #2563eb',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    padding: '2px 4px',
+                    fontWeight: 600
                 }
             };
         }
@@ -611,8 +630,18 @@ export default function DashboardPage() {
                                 <ScrollArea style={{ flex: 1 }}>
                                     {currentDate && todayAppointments.length !== 0 ? (
                                         <Stack gap="sm">
-                                            {todayAppointments.map((apt) => (
-                                                <Paper key={apt.id} p="sm" withBorder>
+                                            {todayAppointments.map((apt, idx) => (
+                                                <Paper
+                                                    key={`${apt.id ?? 'apt'}-${apt.start ? new Date(apt.start).getTime() : 'nostart'}-${idx}`}
+                                                    p="sm"
+                                                    withBorder
+                                                    onClick={() => {
+                                                        setCalendarView('day');
+                                                        if (apt.start) setCurrentDate(new Date(apt.start));
+                                                        selectAppointment(apt);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
                                                     <Group gap="xs" mb="xs">
                                                         <Avatar size="sm" color="blue">
                                                             {apt.patientName[0]}

@@ -1,9 +1,9 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TextInput, PasswordInput, Button, Title, Text, Box, Stack, Flex, Alert, Anchor } from '@mantine/core';
-import { IconUser, IconLock, IconAlertCircle, IconCircleCheck } from '@tabler/icons-react';
+import { TextInput, PasswordInput, Button, Title, Text, Box, Stack, Flex, Alert, Anchor, Loader, Paper } from '@mantine/core';
+import { IconUser, IconLock, IconAlertCircle } from '@tabler/icons-react';
 import { useAuthStore } from '../store';
 
 export default function LoginPage() {
@@ -13,8 +13,13 @@ export default function LoginPage() {
 
     const { login, isLoading, error, clearError } = useAuthStore();
     useEffect(() => {
-        if (useAuthStore.getState().isAuthenticated) {
-            router.push('/dashboard');
+        const state = useAuthStore.getState();
+        if (state.isAuthenticated) {
+            if (state.user?.role === 'doctor') {
+                router.push('/doctor/dashboard');
+            } else {
+                router.push('/dashboard');
+            }
         }
     }, [router]);
 
@@ -25,12 +30,38 @@ export default function LoginPage() {
         const result = await login(username, password);
 
         if (result.success) {
-            router.push('/dashboard');
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'doctor') {
+                router.push('/doctor/dashboard');
+            } else {
+                router.push('/dashboard');
+            }
         }
     };
 
+    const LoadingScreen = ({ message }) => (
+        <Box
+            style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(255,255,255,0.8)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 20
+            }}
+        >
+            <Paper shadow="md" p="lg" radius="xl" withBorder style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <Loader color="blue" />
+                <Text fw={600}>{message}</Text>
+            </Paper>
+        </Box>
+    );
+
     return (
-        <Flex mih="100vh" direction={{ base: 'column', lg: 'row' }}>
+        <Flex mih="100vh" direction={{ base: 'column', lg: 'row' }} style={{ position: 'relative' }}>
             <Box
                 w={{ base: '100%', lg: '50%' }}
                 style={{
@@ -168,6 +199,7 @@ export default function LoginPage() {
                     </Text>
                 </Box>
             </Flex>
+            {isLoading && <LoadingScreen message="Signing you in..." />}
         </Flex>
     );
 }

@@ -1,63 +1,142 @@
 'use client';
 
-import { Radio, Group, ActionIcon, Box, Title, Button, Card, Stack, Alert, Flex } from '@mantine/core';
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import useAppointmentsStore from '../../../store/appointmentsStore';
+import { useRouter } from 'next/navigation';
+import {
+    Radio,
+    Group,
+    ActionIcon,
+    Box,
+    Title,
+    Button,
+    Card,
+    Stack,
+    Alert,
+    Flex,
+    Text,
+    Badge,
+    SimpleGrid,
+    Paper,
+    TextInput
+} from '@mantine/core';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { appointments as mockAppointments } from '../../../data/mock-data';
-import { useRouter } from 'next/navigation';
+import { useAppointmentsStore, useDoctorsStore, useUIStore } from '../../../store';
+import { useSearchParams } from 'next/navigation';
 
 export default function SchedulePage() {
-    const [selectedDoctor, setSelectedDoctor] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const localizer = dayjsLocalizer(dayjs);
+
     const [view, setView] = useState(Views.MONTH);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const localizer = dayjsLocalizer(dayjs);
+    const [selectedDoctor, setSelectedDoctor] = useState('');
+    const [bookingDetails, setBookingDetails] = useState(null);
+    const [duration, setDuration] = useState(20);
+    const [customDuration, setCustomDuration] = useState('20');
+    const [cannotBookMessage, setCannotBookMessage] = useState('');
+
     const selectedAppointment = useAppointmentsStore((s) => s.selectedAppointment);
     const selectAppointment = useAppointmentsStore((s) => s.selectAppointment);
-    const clearSelectedAppointment = useAppointmentsStore((s) => s.clearSelectedAppointment);
-    const addAppointment = useAppointmentsStore((s) => s.addAppointment);
-    const hasPendingBooking = !!selectedAppointment;
     const confirmedAppointments = useAppointmentsStore((s) => s.appointments) || [];
 
-    const filteredAppointments = useMemo(() => {
-        let all = confirmedAppointments.filter((a) => !a.client);
-        if (selectedDoctor) {
-            all = all.filter((a) => a.doctorName === selectedDoctor.slice(0, -2));
+    const doctors = useDoctorsStore((s) => s.doctors);
+    const diagnosticRecommendation = useUIStore((s) => s.diagnosticRecommendation);
+    const clearDiagnosticRecommendation = useUIStore((s) => s.clearDiagnosticRecommendation);
+
+    useEffect(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem('bookingDetails') || 'null');
+            setBookingDetails(saved);
+            if (saved?.duration && Number.isFinite(saved.duration)) {
+                setDuration(saved.duration);
+                setCustomDuration(String(saved.duration));
+            }
+        } catch (e) {
+            console.error('Failed to load booking details', e);
         }
-        return all;
-    }, [confirmedAppointments, selectedDoctor]);
+    }, []);
+
+    useEffect(() => {
+        if (diagnosticRecommendation?.doctorName) {
+            setSelectedDoctor(diagnosticRecommendation.doctorName);
+        }
+    }, [diagnosticRecommendation]);
+
+    useEffect(() => {
+        const doctorId = searchParams.get('doctorId');
+        if (doctorId) {
+            const doc = doctors.find((d) => String(d.id) === doctorId);
+            if (doc) {
+                setSelectedDoctor(doc.name);
+            }
+        }
+    }, [searchParams, doctors]);
+
+    const normalizedAppointments = useMemo(
+        () =>
+            confirmedAppointments.map((ev) => ({
+                ...ev,
+                start: ev.start instanceof Date ? ev.start : new Date(ev.start),
+                end: ev.end instanceof Date ? ev.end : new Date(ev.end)
+            })),
+        [confirmedAppointments]
+    );
+
+    const doctorEvents = useMemo(() => {
+        if (!selectedDoctor) return normalizedAppointments;
+        return normalizedAppointments.filter((a) => a.doctorName === selectedDoctor);
+    }, [normalizedAppointments, selectedDoctor]);
+
+    const hasPendingBooking = !!selectedAppointment;
 
     const pendingEvent = useMemo(() => {
         if (selectedAppointment && selectedAppointment.start && selectedAppointment.end) {
             return {
+                ...selectedAppointment,
                 title: `${selectedAppointment.patientName || 'Patient'} (Pending)`,
                 start: selectedAppointment.start,
                 end: selectedAppointment.end,
-                client: true
+                client: true,
+                doctorName: selectedDoctor || selectedAppointment.doctorName
             };
         }
         return null;
-    }, [selectedAppointment]);
+    }, [selectedAppointment, selectedDoctor]);
+    const hasConflict = useCallback(
+        (start, end) => {
+            return doctorEvents.some((ev) => {
+                if (ev.client) return false;
+                const evStart = ev.start instanceof Date ? ev.start : new Date(ev.start);
+                const evEnd = ev.end instanceof Date ? ev.end : new Date(ev.end);
+                return start < evEnd && end > evStart;
+            });
+        },
+        [doctorEvents]
+    );
+    const isSlotWithinHours = (start, end) => {
+        const slot = dayjs(start);
+        const slotEnd = dayjs(end);
+        const isWeekend = slot.day() === 0 || slot.day() === 6;
+        const opening = isWeekend ? slot.hour(9).minute(0) : slot.hour(8).minute(0);
+        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(18).minute(0);
+        return slot.isSameOrAfter(opening) && slotEnd.isSameOrBefore(closing);
+    };
 
     const events = useMemo(() => {
-        if (!selectedDoctor) return [];
-        const evs = [...filteredAppointments];
-        if (pendingEvent) evs.push(pendingEvent);
-        return evs;
-    }, [filteredAppointments, pendingEvent, selectedDoctor]);
-    const [cannotBookMessage, setCannotBookMessage] = useState('');
+        return pendingEvent ? [pendingEvent] : [];
+    }, [pendingEvent]);
 
     const eventStyleGetter = (event) => {
         let backgroundColor = '#fef3c7';
         let color = '#92400e';
-        if (event.type === 'Afternoon Appt Available') {
-            backgroundColor = '#d1fae5';
-            color = '#065f46';
+        if (event.client) {
+            backgroundColor = '#bfdbfe';
+            color = '#1d4ed8';
         }
         return {
             style: {
@@ -73,15 +152,72 @@ export default function SchedulePage() {
 
     const handleNavigate = (direction) => {
         const increment = view === Views.DAY ? 'day' : view === Views.WEEK ? 'week' : 'month';
-        const newDate =
+        const candidate =
             direction === 'NEXT'
-                ? dayjs(currentDate).add(1, increment).toDate()
-                : dayjs(currentDate).subtract(1, increment).toDate();
+                ? dayjs(currentDate).add(1, increment)
+                : dayjs(currentDate).subtract(1, increment);
+        const today = dayjs().startOf('day');
+        const newDate = candidate.isBefore(today) ? today.toDate() : candidate.toDate();
         setCurrentDate(newDate);
     };
 
+    const createPendingBooking = useCallback(
+        (start) => {
+            setCannotBookMessage('');
+            const booking = bookingDetails;
+            if (!booking) {
+                setCannotBookMessage('No booking details found. Please complete the booking form first.');
+                return;
+            }
+            if (!selectedDoctor) {
+                setCannotBookMessage('Select a doctor first.');
+                return;
+            }
+
+            const startDate = start instanceof Date ? start : new Date(start);
+            const endDate = dayjs(startDate).add(duration, 'minute').toDate();
+
+            if (dayjs(startDate).isBefore(dayjs())) {
+                setCannotBookMessage('Cannot book a time that has already passed.');
+                return;
+            }
+
+            if (!isSlotWithinHours(startDate, endDate)) {
+                setCannotBookMessage('Selected time is outside clinic hours.');
+                return;
+            }
+
+            if (hasConflict(startDate, endDate)) {
+                setCannotBookMessage('Selected time conflicts with an existing appointment. Choose another slot.');
+                return;
+            }
+
+            const pending = {
+                patientName: booking.patientName || 'Patient',
+                appointmentType: booking.appointmentType || 'Booked',
+                duration,
+                start: startDate,
+                end: endDate,
+                doctorName: selectedDoctor,
+                notes: booking.notes || ''
+            };
+            try {
+                selectAppointment(pending);
+            } catch (e) {
+                console.error('Failed to save pending booking', e);
+                setCannotBookMessage('Failed to prepare booking. Please try again.');
+            }
+        },
+        [bookingDetails, hasConflict, selectedDoctor, duration]
+    );
+
     const handleSelectSlot = useCallback(
         (slotInfo) => {
+            if (!selectedDoctor) {
+                setCannotBookMessage('Select a doctor to place a booking.');
+                return;
+            }
+
             if (view === Views.MONTH || view === Views.WEEK) {
                 setCurrentDate(slotInfo.start);
                 setView(Views.DAY);
@@ -89,136 +225,38 @@ export default function SchedulePage() {
             }
 
             if (view === Views.DAY) {
-                try {
-                    setCannotBookMessage('');
-                    const booking = JSON.parse(localStorage.getItem('bookingDetails') || 'null');
-                    if (!booking) {
-                        setCannotBookMessage('No booking details found. Please complete the booking form first.');
-                        return;
-                    }
-                    const duration = booking.duration || 20;
-                    if (!duration || duration <= 0) {
-                        setCannotBookMessage('Invalid appointment duration. Please set a valid duration.');
-                        return;
-                    }
-                    const start = slotInfo.start;
-                    const end = dayjs(start).add(duration, 'minute').toDate();
-
-                    const now = new Date();
-                    if (dayjs(start).isBefore(dayjs(now))) {
-                        setCannotBookMessage('Cannot book a time that has already passed.');
-                        return;
-                    }
-
-                    const day = dayjs(start).day();
-                    const hour = dayjs(start).hour();
-                    const minute = dayjs(start).minute();
-                    const isWeekend = day === 0 || day === 6;
-                    if (isWeekend) {
-                        const startMinutes = hour * 60 + minute;
-                        const endMinutes = dayjs(end).hour() * 60 + dayjs(end).minute();
-                        const minAllowed = 9 * 60;
-                        const maxAllowed = 14 * 60;
-                        const allowed = startMinutes >= minAllowed && endMinutes <= maxAllowed;
-                        if (!allowed) {
-                            setCannotBookMessage(
-                                'On weekends the appointment must be fully between 9:00 AM and 2:00 PM.'
-                            );
-                            return;
-                        }
-                    } else {
-                        const endMinutes = dayjs(end).hour() * 60 + dayjs(end).minute();
-                        const maxWeekday = 18 * 60;
-                        if (endMinutes > maxWeekday) {
-                            setCannotBookMessage('Appointment end time must be before 6:00 PM on weekdays.');
-                            return;
-                        }
-                    }
-
-                    const hasConflict = filteredAppointments.some((ev) => {
-                        if (ev.client) return false;
-                        if (selectedDoctor && ev.doctorName !== selectedDoctor) return false;
-                        const evStart = ev.start instanceof Date ? ev.start : new Date(ev.start);
-                        const evEnd = ev.end instanceof Date ? ev.end : new Date(ev.end);
-                        return start < evEnd && end > evStart;
-                    });
-
-                    if (hasConflict) {
-                        setCannotBookMessage(
-                            'Selected time conflicts with an existing appointment. Choose another slot.'
-                        );
-                        return;
-                    }
-
-                    const pending = {
-                        patientName: booking.patientName || 'Patient',
-                        appointmentType: booking.appointmentType || 'Booked',
-                        duration,
-                        start,
-                        end,
-                        doctorName: selectedDoctor,
-                        notes: booking.notes || ''
-                    };
-                    try {
-                        selectAppointment(pending);
-                    } catch (e) {
-                        console.error('Failed to save pending booking', e);
-                        setCannotBookMessage('Failed to prepare booking. Please try again.');
-                    }
-                } catch (e) {
-                    console.error('Failed to schedule appointment', e);
-                    setCannotBookMessage('Failed to schedule appointment. Please try again.');
-                }
+                createPendingBooking(slotInfo.start);
             }
         },
-        [view, filteredAppointments, selectedDoctor, selectAppointment]
+        [selectedDoctor, view, createPendingBooking]
     );
 
-    const isSlotAllowed = (date) => {
-        if (!selectedDoctor) return false;
-        const now = dayjs();
-        const slot = dayjs(date);
-        if (slot.isBefore(now)) return false;
-        let duration = 20;
-        try {
-            const booking = JSON.parse(localStorage.getItem('bookingDetails') || 'null');
-            if (booking?.duration) duration = booking.duration;
-        } catch (e) {}
+    const availableSlots = useMemo(() => {
+        if (!selectedDoctor) return [];
+        const today = dayjs().startOf('day');
+        const baseDay = dayjs(currentDate).startOf('day');
+        const base = baseDay.isBefore(today) ? today : baseDay;
+        const isWeekend = base.day() === 0 || base.day() === 6;
+        const startHour = isWeekend ? 9 : 8;
+        const endHour = isWeekend ? 14 : 18;
+        const slots = [];
 
-        const end = slot.add(duration, 'minute');
-
-        const day = slot.day();
-        const hour = slot.hour();
-        const minute = slot.minute();
-        const isWeekend = day === 0 || day === 6;
-        if (isWeekend) {
-            const startMinutes = hour * 60 + minute;
-            const endMinutes = end.hour() * 60 + end.minute();
-            const minAllowed = 9 * 60;
-            const maxAllowed = 14 * 60;
-            if (!(startMinutes >= minAllowed && endMinutes <= maxAllowed)) return false;
-        } else {
-            const endMinutes = end.hour() * 60 + end.minute();
-            const minAllowed = 8 * 60;
-            const maxAllowed = 18 * 60;
-            const startMinutes = hour * 60 + minute;
-            if (!(startMinutes >= minAllowed && endMinutes <= maxAllowed)) return false;
+        for (let h = startHour; h < endHour; h++) {
+            for (const m of [0, 20, 40]) {
+                const start = base.hour(h).minute(m).toDate();
+                const end = dayjs(start).add(duration, 'minute').toDate();
+                if (!isSlotWithinHours(start, end)) continue;
+                if (dayjs(start).isBefore(dayjs())) continue;
+                if (hasConflict(start, end)) continue;
+                slots.push({ start, end });
+            }
         }
-
-        const hasConflict = filteredAppointments.some((ev) => {
-            if (ev.client) return false;
-            if (selectedDoctor && ev.doctorName !== selectedDoctor) return false;
-            const evStart = ev.start instanceof Date ? ev.start : new Date(ev.start);
-            const evEnd = ev.end instanceof Date ? ev.end : new Date(ev.end);
-            return slot.toDate() < evEnd && end.toDate() > evStart;
-        });
-        if (hasConflict) return false;
-
-        return true;
-    };
+        return slots;
+    }, [selectedDoctor, currentDate, duration, hasConflict]);
 
     const slotPropGetter = (date) => {
-        const allowed = isSlotAllowed(date);
+        const end = dayjs(date).add(duration, 'minute').toDate();
+        const allowed = selectedDoctor && isSlotWithinHours(date, end) && !hasConflict(date, end);
         if (!allowed) {
             return {
                 style: {
@@ -232,7 +270,8 @@ export default function SchedulePage() {
 
     const handleOnSelecting = (range) => {
         const start = range.start || range;
-        return isSlotAllowed(start);
+        const end = dayjs(start).add(duration, 'minute').toDate();
+        return selectedDoctor && isSlotWithinHours(start, end) && !hasConflict(start, end);
     };
 
     const getHeaderText = () => {
@@ -246,52 +285,150 @@ export default function SchedulePage() {
         return '';
     };
 
+    const handleQuickSelect = (slot) => {
+        setView(Views.DAY);
+        setCurrentDate(slot.start);
+        createPendingBooking(slot.start);
+    };
+
+    const doctorLabel = (doc) => (
+        <Group gap="xs">
+            <Badge color={doc.colorName || 'blue'} variant="light">
+                {doc.status}
+            </Badge>
+            <Text>{doc.name}</Text>
+        </Group>
+    );
+
     return (
         <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
-            <Card shadow="sm" padding="lg" withBorder style={{ width: '25%', minWidth: '250px', height: '80vh' }}>
-                <Radio.Group name="appointment-type" value={selectedDoctor ?? ''} onChange={setSelectedDoctor}>
-                    <Box mb="lg">
-                        <Title order={3} mb="sm">
-                            Family Doctor:
-                        </Title>
-                        <Stack spacing="sm">
-                            <Radio value="Dr. AhmedFD" label="Dr. Ahmed" size="lg" />
-                        </Stack>
-                    </Box>
+            <Card shadow="sm" padding="lg" withBorder style={{ width: '28%', minWidth: '260px', height: '80vh' }}>
+                <Stack gap="lg" style={{ height: '100%' }}>
+                    <Title order={3}>Select Doctor</Title>
 
-                    <Box mb="lg">
-                        <Title order={3} mb="sm">
-                            Last Seen:
-                        </Title>
-                        <Stack spacing="sm">
-                            <Radio value="Dr. AhmedLS" label="Dr. Ahmed" size="lg" />
-                        </Stack>
-                    </Box>
+                    {diagnosticRecommendation && (
+                        <Alert
+                            title="Recommended"
+                            color="blue"
+                            radius="md"
+                            styles={{ title: { fontWeight: 700 } }}
+                            icon={
+                                <Badge color="blue" variant="filled">
+                                    AI
+                                </Badge>
+                            }
+                        >
+                            <Stack gap="xs">
+                                <Text fw={600}>{diagnosticRecommendation.doctorName}</Text>
+                                <Text size="sm" c="dimmed">
+                                    {diagnosticRecommendation.reason}
+                                </Text>
+                                <Group gap="xs">
+                                    <Button
+                                        size="xs"
+                                        onClick={() => setSelectedDoctor(diagnosticRecommendation.doctorName)}
+                                    >
+                                        Use this doctor
+                                    </Button>
+                                    <Button size="xs" variant="subtle" onClick={() => clearDiagnosticRecommendation()}>
+                                        Dismiss
+                                    </Button>
+                                </Group>
+                            </Stack>
+                        </Alert>
+                    )}
 
-                    <Box mb="lg">
-                        <Title order={3} mb="sm">
-                            Best Symptom Match:
-                        </Title>
-                        <Stack spacing="sm">
-                            <Radio value="Dr. AhmedSM" label="Dr. Ahmed" size="lg" />
+                    <Radio.Group name="appointment-doctor" value={selectedDoctor} onChange={setSelectedDoctor}>
+                        <Stack gap="sm">
+                            {doctors.map((doc) => (
+                                <Radio
+                                    key={doc.id}
+                                    value={doc.name}
+                                    label={doctorLabel(doc)}
+                                    size="md"
+                                    styles={{ label: { width: '100%' } }}
+                                />
+                            ))}
                         </Stack>
-                    </Box>
+                    </Radio.Group>
 
-                    <Box mb="lg">
-                        <Title order={3} mb="sm">
-                            Earliest Appointment:
+                    <Button variant="light" color="gray" onClick={() => setSelectedDoctor('')}>
+                        Clear selection
+                    </Button>
+
+                    <Paper withBorder radius="md" p="md">
+                        <Title order={4} mb="xs">
+                            Appointment Duration
                         </Title>
-                        <Stack spacing="sm">
-                            <Radio value="Dr. TurnerEA" label="Dr. Turner" size="lg" />
-                            <Radio value="Dr. AhmedEA" label="Dr. Ahmed" size="lg" />
-                            <Radio value="Dr. MikeEA" label="Dr. Mike" size="lg" />
-                            <Radio value="Dr. JoelEA" label="Dr. Joel" size="lg" />
-                        </Stack>
-                    </Box>
-                </Radio.Group>
+                        <Button.Group mb="sm">
+                            {[20, 40, 60].map((m) => (
+                                <Button
+                                    key={m}
+                                    size="xs"
+                                    variant={duration === m ? 'filled' : 'light'}
+                                    onClick={() => {
+                                        setDuration(m);
+                                        setCustomDuration(String(m));
+                                    }}
+                                >
+                                    {m} min
+                                </Button>
+                            ))}
+                        </Button.Group>
+                        <TextInput
+                            label="Custom minutes"
+                            type="number"
+                            min={5}
+                            value={customDuration}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setCustomDuration(val);
+                                const parsed = parseInt(val, 10);
+                                if (!Number.isNaN(parsed) && parsed > 0) {
+                                    setDuration(parsed);
+                                }
+                            }}
+                            placeholder="e.g. 30"
+                            size="xs"
+                        />
+                        <Text size="xs" c="dimmed" mt={6}>
+                            Used for availability and booking length.
+                        </Text>
+                    </Paper>
+
+                    <Paper withBorder radius="md" p="md" style={{ flex: 1, overflow: 'auto' }}>
+                        <Title order={4} mb="xs">
+                            Quick Times ({dayjs(currentDate).format('MMM D')}) — {duration} min
+                        </Title>
+                        {selectedDoctor ? (
+                            availableSlots.length > 0 ? (
+                                <SimpleGrid cols={2} spacing="xs">
+                                    {availableSlots.slice(0, 8).map((slot) => (
+                                        <Button
+                                            key={slot.start.toISOString()}
+                                            variant="light"
+                                            size="xs"
+                                            onClick={() => handleQuickSelect(slot)}
+                                        >
+                                            {dayjs(slot.start).format('h:mm A')}
+                                        </Button>
+                                    ))}
+                                </SimpleGrid>
+                            ) : (
+                                <Text size="sm" c="dimmed">
+                                    No available times for this day. Pick another day on the calendar.
+                                </Text>
+                            )
+                        ) : (
+                            <Text size="sm" c="dimmed">
+                                Select a doctor to view available times.
+                            </Text>
+                        )}
+                    </Paper>
+                </Stack>
             </Card>
 
-            <Box style={{ width: '75%', display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ width: '72%', display: 'flex', flexDirection: 'column' }}>
                 <Flex align="center" mb="md" style={{ width: '100%' }}>
                     <Button.Group>
                         <Button
@@ -318,7 +455,7 @@ export default function SchedulePage() {
                     </Button.Group>
 
                     <Box style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                        <Group spacing="xs">
+                        <Group gap="xs">
                             <ActionIcon variant="subtle" size="lg" onClick={() => handleNavigate('PREV')}>
                                 <IconChevronLeft size={24} />
                             </ActionIcon>
@@ -344,11 +481,7 @@ export default function SchedulePage() {
                 >
                     <Calendar
                         localizer={localizer}
-                        events={events.map((ev) => ({
-                            ...ev,
-                            start: ev.start && !(ev.start instanceof Date) ? new Date(ev.start) : ev.start,
-                            end: ev.end && !(ev.end instanceof Date) ? new Date(ev.end) : ev.end
-                        }))}
+                        events={events}
                         startAccessor="start"
                         endAccessor="end"
                         style={{ height: '100%' }}
@@ -394,7 +527,7 @@ export default function SchedulePage() {
                     )}
 
                     {cannotBookMessage && (
-                        <Box style={{ position: 'absolute', top: 12, right: 12, width: 340, zIndex: 30 }}>
+                        <Box style={{ position: 'absolute', top: 12, right: 12, width: 360, zIndex: 30 }}>
                             <Alert title="Cannot Book" color="red" style={{ padding: '6px 10px', fontSize: '0.95rem' }}>
                                 <div style={{ margin: 0, fontSize: '0.9rem' }}>{cannotBookMessage}</div>
                             </Alert>

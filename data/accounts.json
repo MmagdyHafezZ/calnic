@@ -10,6 +10,54 @@
             "address": "123 Main St, Anytown, USA",
             "createdAt": "2023-10-01T12:00:00Z",
             "updatedAt": "2023-10-01T12:00:00Z"
+        },
+        {
+            "id": "2",
+            "name": "Dr. Ahmed",
+            "email": "ahmed",
+            "role": "doctor",
+            "doctorId": 1,
+            "password": "doctor",
+            "phone": "555-111-2222",
+            "address": "200 Clinic Way",
+            "createdAt": "2023-10-01T12:00:00Z",
+            "updatedAt": "2023-10-01T12:00:00Z"
+        },
+        {
+            "id": "3",
+            "name": "Dr. Turner",
+            "email": "turner",
+            "role": "doctor",
+            "doctorId": 2,
+            "password": "doctor",
+            "phone": "555-333-4444",
+            "address": "201 Clinic Way",
+            "createdAt": "2023-10-01T12:00:00Z",
+            "updatedAt": "2023-10-01T12:00:00Z"
+        },
+        {
+            "id": "4",
+            "name": "Dr. Mike",
+            "email": "mike",
+            "role": "doctor",
+            "doctorId": 3,
+            "password": "doctor",
+            "phone": "555-555-6666",
+            "address": "202 Clinic Way",
+            "createdAt": "2023-10-01T12:00:00Z",
+            "updatedAt": "2023-10-01T12:00:00Z"
+        },
+        {
+            "id": "5",
+            "name": "Dr. Joel",
+            "email": "joel",
+            "role": "doctor",
+            "doctorId": 4,
+            "password": "doctor",
+            "phone": "555-777-8888",
+            "address": "203 Clinic Way",
+            "createdAt": "2023-10-01T12:00:00Z",
+            "updatedAt": "2023-10-01T12:00:00Z"
         }
     ]
 }

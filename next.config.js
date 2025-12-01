@@ -30,10 +30,6 @@ const nextConfig = {
   rewrites() {
     return [
       {
-        source: '/api/health',
-        destination: '/quotes/random',
-      },
-      {
         source: '/blog',
         destination: '/classics',
       },

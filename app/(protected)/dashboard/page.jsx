@@ -285,7 +285,16 @@ export default function DashboardPage() {
     return (
         <>
             <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
-                <Box style={{ display: 'flex', gap: '1rem', height: '100%', width: '100%', overflow: 'hidden', minHeight: 0 }}>
+                <Box
+                    style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        height: '100%',
+                        width: '100%',
+                        overflow: 'hidden',
+                        minHeight: 0
+                    }}
+                >
                     <Box style={{ width: '220px', flexShrink: 0 }}>
                         <Stack gap="md">
                             <Button
@@ -303,6 +312,7 @@ export default function DashboardPage() {
                                 variant="light"
                                 leftSection={<IconPlus size={20} />}
                                 fullWidth
+                                onClick={() => (window.location.href = '/new-patient')}
                             >
                                 Add Patient
                             </Button>
@@ -357,7 +367,9 @@ export default function DashboardPage() {
                         </Stack>
                     </Box>
 
-                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                    <Box
+                        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
+                    >
                         <Group justify="center" mb="md" gap="xl">
                             <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
                                 <IconChevronLeft size={24} />
@@ -401,7 +413,15 @@ export default function DashboardPage() {
                             </Button.Group>
                         </Group>
 
-                        <Box style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', padding: '1rem', minHeight: 0 }}>
+                        <Box
+                            style={{
+                                flex: 1,
+                                backgroundColor: 'white',
+                                borderRadius: '8px',
+                                padding: '1rem',
+                                minHeight: 0
+                            }}
+                        >
                             {/** Ensure start/end are Date objects even if persisted as strings */}
                             <Calendar
                                 localizer={localizer}
@@ -580,7 +600,11 @@ export default function DashboardPage() {
                                 onChange={(e) => setPatientSearchQuery(e.target.value)}
                             />
 
-                            <Paper p="md" withBorder style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                            <Paper
+                                p="md"
+                                withBorder
+                                style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                            >
                                 <Title order={4} mb="md">
                                     Appointments
                                 </Title>

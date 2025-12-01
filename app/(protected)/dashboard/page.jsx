@@ -87,11 +87,6 @@ export default function DashboardPage() {
         }
     }, [doctors, selectedDoctors, selectAllDoctors]);
 
-    const handleLogout = () => {
-        logout();
-        router.push('/');
-    };
-
     const handleSelectEvent = (event) => {
         selectAppointment(event);
         openAppointmentDetailsModal();
@@ -288,37 +283,9 @@ export default function DashboardPage() {
     };
 
     return (
-        <AppShell header={{ height: 70 }} padding="md">
-            <AppShell.Header>
-                <Group h="100%" px="xl" justify="space-between">
-                    <Group>
-                        <IconStethoscope size={32} color="#3b82f6" />
-                        <Title order={2} c="blue.6">
-                            Calnic
-                        </Title>
-                    </Group>
-                    <Menu shadow="md" width={200}>
-                        <Menu.Target>
-                            <Button
-                                variant="light"
-                                radius="xl"
-                                leftSection={<IconUser size={16} />}
-                                rightSection={<IconMenu2 size={16} />}
-                            >
-                                {user.name}
-                            </Button>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                            <Menu.Item color="red" onClick={handleLogout}>
-                                Logout
-                            </Menu.Item>
-                        </Menu.Dropdown>
-                    </Menu>
-                </Group>
-            </AppShell.Header>
-
-            <AppShell.Main>
-                <Box style={{ display: 'flex', gap: '1rem', height: 'calc(100vh - 100px)' }}>
+        <>
+            <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
+                <Box style={{ display: 'flex', gap: '1rem', height: '100%', width: '100%', overflow: 'hidden', minHeight: 0 }}>
                     <Box style={{ width: '220px', flexShrink: 0 }}>
                         <Stack gap="md">
                             <Button
@@ -390,7 +357,7 @@ export default function DashboardPage() {
                         </Stack>
                     </Box>
 
-                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
                         <Group justify="center" mb="md" gap="xl">
                             <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
                                 <IconChevronLeft size={24} />
@@ -434,7 +401,7 @@ export default function DashboardPage() {
                             </Button.Group>
                         </Group>
 
-                        <Box style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', padding: '1rem' }}>
+                        <Box style={{ flex: 1, backgroundColor: 'white', borderRadius: '8px', padding: '1rem', minHeight: 0 }}>
                             {/** Ensure start/end are Date objects even if persisted as strings */}
                             <Calendar
                                 localizer={localizer}
@@ -592,8 +559,8 @@ export default function DashboardPage() {
                             )}
                         </Modal>
                     </Box>
-                    <Box style={{ width: '300px', flexShrink: 0 }}>
-                        <Stack gap="md" style={{ height: '100%' }}>
+                    <Box style={{ width: '300px', flexShrink: 0, minHeight: 0 }}>
+                        <Stack gap="md" style={{ height: '100%', minHeight: 0 }}>
                             <TextInput
                                 placeholder="Search Patient"
                                 leftSection={<IconSearch size={16} />}
@@ -613,11 +580,11 @@ export default function DashboardPage() {
                                 onChange={(e) => setPatientSearchQuery(e.target.value)}
                             />
 
-                            <Paper p="md" withBorder style={{ flex: 1 }}>
+                            <Paper p="md" withBorder style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                                 <Title order={4} mb="md">
                                     Appointments
                                 </Title>
-                                <ScrollArea h="calc(100vh - 220px)">
+                                <ScrollArea style={{ flex: 1 }}>
                                     {currentDate && todayAppointments.length !== 0 ? (
                                         <Stack gap="sm">
                                             {todayAppointments.map((apt) => (
@@ -660,6 +627,6 @@ export default function DashboardPage() {
             </AppShell.Main>
 
             <BookingModal opened={isBookingModalOpen} onClose={closeBookingModal} />
-        </AppShell>
+        </>
     );
 }

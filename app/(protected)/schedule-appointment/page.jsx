@@ -247,7 +247,7 @@ export default function SchedulePage() {
     };
 
     return (
-        <Box style={{ display: 'flex', padding: '2rem', gap: '2rem' }}>
+        <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
             <Card shadow="sm" padding="lg" withBorder style={{ width: '25%', minWidth: '250px', height: '80vh' }}>
                 <Radio.Group name="appointment-type" value={selectedDoctor ?? ''} onChange={setSelectedDoctor}>
                     <Box mb="lg">

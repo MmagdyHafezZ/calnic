@@ -2,9 +2,30 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppShell, Box, Paper, Stack, Title, Text, Radio, Group, Button, Progress, Badge } from '@mantine/core';
+import { AppShell, Box, Paper, Stack, Title, Text, Radio, Group, Button, Progress, Badge, TextInput } from '@mantine/core';
 import { diagnosticQuestions, diagnosticReasons } from '../../../../data/diagnostic-questions';
 import { useAuthStore, useDoctorsStore, useUIStore } from '../../../../store';
+
+const getAnswerValue = (answer) => {
+    if (!answer) return '';
+    return typeof answer === 'string' ? answer : answer.value || '';
+};
+
+const getOtherText = (answer) => {
+    if (answer && typeof answer === 'object' && answer.value === 'other') {
+        return answer.otherText || '';
+    }
+    return '';
+};
+
+const isAnswerComplete = (answer) => {
+    if (!answer) return false;
+    if (typeof answer === 'string') return !!answer;
+    if (answer.value === 'other') {
+        return !!(answer.otherText && answer.otherText.trim());
+    }
+    return !!answer.value;
+};
 
 export default function DiagnosticQuestionsPage() {
     const router = useRouter();
@@ -33,11 +54,16 @@ export default function DiagnosticQuestionsPage() {
     const [currentId, setCurrentId] = useState(() => flatQuestions.list[0]?.id);
     const [history, setHistory] = useState([]);
     const [currentValue, setCurrentValue] = useState('');
+    const [currentOtherText, setCurrentOtherText] = useState('');
 
     const current = currentId ? flatQuestions.map.get(currentId) : null;
     const total = flatQuestions.list.length;
-    const answeredCount = Object.keys(answers).length;
-    const progress = Math.round(((answeredCount + 1) / total) * 100);
+    const answeredCount = useMemo(
+        () => flatQuestions.list.reduce((count, q) => (isAnswerComplete(answers[q.id]) ? count + 1 : count), 0),
+        [answers, flatQuestions.list]
+    );
+    const currentStep = Math.min(answeredCount + 1, total);
+    const progress = Math.round((currentStep / total) * 100);
 
     useEffect(() => {
         clearDiagnosticRecommendation();
@@ -49,22 +75,33 @@ export default function DiagnosticQuestionsPage() {
     useEffect(() => {
         if (current?.id) {
             const saved = answers[current.id];
-            setCurrentValue(saved ? String(saved) : '');
+            setCurrentValue(getAnswerValue(saved));
+            setCurrentOtherText(getOtherText(saved));
         } else {
             setCurrentValue('');
+            setCurrentOtherText('');
         }
     }, [current?.id, answers]);
 
     const selectAnswer = (questionId, value) => {
+        const prevOtherText = getOtherText(answers[questionId]);
         setCurrentValue(value);
-        setAnswers((prev) => ({ ...prev, [questionId]: value }));
+        setCurrentOtherText(value === 'other' ? prevOtherText : '');
+        setAnswers((prev) => ({ ...prev, [questionId]: { value, otherText: prevOtherText } }));
+    };
+
+    const handleOtherTextChange = (text) => {
+        if (!current?.id) return;
+        setCurrentValue('other');
+        setCurrentOtherText(text);
+        setAnswers((prev) => ({ ...prev, [current.id]: { value: 'other', otherText: text } }));
     };
 
     const computeRecommendation = () => {
         const scores = {};
 
         flatQuestions.list.forEach((q) => {
-            const chosen = answers[q.id];
+            const chosen = getAnswerValue(answers[q.id]);
             const option = q.options.find((opt) => opt.value === chosen);
             if (option?.doctorWeights) {
                 Object.entries(option.doctorWeights).forEach(([doctorName, weight]) => {
@@ -105,9 +142,9 @@ export default function DiagnosticQuestionsPage() {
     const handleNext = () => {
         if (!current) return;
         const currentAnswer = answers[current.id];
-        if (!currentAnswer) return;
+        if (!isAnswerComplete(currentAnswer)) return;
 
-        const nextId = getNextQuestionId(current.id, currentAnswer);
+        const nextId = getNextQuestionId(current.id, getAnswerValue(currentAnswer));
         if (nextId) {
             setHistory((h) => [...h, current.id]);
             setCurrentId(nextId);
@@ -138,6 +175,8 @@ export default function DiagnosticQuestionsPage() {
         });
     };
 
+    const currentAnswerComplete = currentValue === 'other' ? !!currentOtherText.trim() : !!currentValue;
+
     if (!current) {
         return (
             <AppShell.Main>
@@ -160,7 +199,7 @@ export default function DiagnosticQuestionsPage() {
                                 Diagnostic Questionnaire
                             </Title>
                             <Badge color="blue" variant="light">
-                                Step {Math.min(answeredCount + 1, total)} of {total}
+                                Step {currentStep} of {total}
                             </Badge>
                         </Group>
                         <Progress value={progress} size="sm" radius="xl" />
@@ -177,6 +216,16 @@ export default function DiagnosticQuestionsPage() {
                                     {current?.options?.map((opt) => (
                                         <Radio key={opt.value} value={opt.value} label={opt.label} size="md" />
                                     ))}
+                                    <Box>
+                                        <Radio value="other" label="Other" size="md" />
+                                        <TextInput
+                                            mt="xs"
+                                            placeholder="Add your own answer"
+                                            value={currentOtherText}
+                                            onChange={(e) => handleOtherTextChange(e.target.value)}
+                                            disabled={currentValue !== 'other'}
+                                        />
+                                    </Box>
                                 </Stack>
                             </Radio.Group>
                         </Box>
@@ -189,7 +238,7 @@ export default function DiagnosticQuestionsPage() {
                                 <Button variant="light" color="gray" onClick={() => router.push('/schedule-appointment')}>
                                     Skip to scheduling
                                 </Button>
-                                <Button onClick={handleNext} disabled={!currentValue}>
+                                <Button onClick={handleNext} disabled={!currentAnswerComplete}>
                                     Next Question
                                 </Button>
                             </Group>

@@ -48,6 +48,8 @@ export default function SchedulePage() {
     const diagnosticRecommendation = useUIStore((s) => s.diagnosticRecommendation);
     const clearDiagnosticRecommendation = useUIStore((s) => s.clearDiagnosticRecommendation);
 
+    const selectedDoctorObj = useMemo(() => doctors.find((d) => d.name === selectedDoctor), [doctors, selectedDoctor]);
+
     useEffect(() => {
         try {
             const saved = JSON.parse(localStorage.getItem('bookingDetails') || 'null');
@@ -94,39 +96,68 @@ export default function SchedulePage() {
 
     const hasPendingBooking = !!selectedAppointment;
 
+    const normalizedSelectedAppointment = useMemo(() => {
+        if (!selectedAppointment) return null;
+        const start =
+            selectedAppointment.start instanceof Date ? selectedAppointment.start : new Date(selectedAppointment.start);
+        const end =
+            selectedAppointment.end instanceof Date ? selectedAppointment.end : new Date(selectedAppointment.end);
+        if (Number.isNaN(start?.getTime()) || Number.isNaN(end?.getTime())) return null;
+        return { ...selectedAppointment, start, end };
+    }, [selectedAppointment]);
+
+    const [rescheduleTarget, setRescheduleTarget] = useState(null);
+
+    useEffect(() => {
+        if (normalizedSelectedAppointment?.needsReschedule) {
+            setRescheduleTarget(normalizedSelectedAppointment);
+        }
+    }, [normalizedSelectedAppointment]);
+
     const pendingEvent = useMemo(() => {
-        if (selectedAppointment && selectedAppointment.start && selectedAppointment.end) {
+        if (normalizedSelectedAppointment) {
             return {
-                ...selectedAppointment,
-                title: `${selectedAppointment.patientName || 'Patient'} (Pending)`,
-                start: selectedAppointment.start,
-                end: selectedAppointment.end,
+                ...normalizedSelectedAppointment,
+                title: `${normalizedSelectedAppointment.patientName || 'Patient'} (Pending)`,
+                start: normalizedSelectedAppointment.start,
+                end: normalizedSelectedAppointment.end,
                 client: true,
-                doctorName: selectedDoctor || selectedAppointment.doctorName
+                doctorName: selectedDoctor || normalizedSelectedAppointment.doctorName
             };
         }
         return null;
-    }, [selectedAppointment, selectedDoctor]);
+    }, [normalizedSelectedAppointment, selectedDoctor]);
     const hasConflict = useCallback(
         (start, end) => {
             return doctorEvents.some((ev) => {
                 if (ev.client) return false;
+                if (rescheduleTarget?.id && ev.id === rescheduleTarget.id) return false;
                 const evStart = ev.start instanceof Date ? ev.start : new Date(ev.start);
                 const evEnd = ev.end instanceof Date ? ev.end : new Date(ev.end);
                 return start < evEnd && end > evStart;
             });
         },
-        [doctorEvents]
+        [doctorEvents, rescheduleTarget?.id]
     );
     const isSlotWithinHours = (start, end) => {
         const slot = dayjs(start);
         const slotEnd = dayjs(end);
         const isWeekend = slot.day() === 0 || slot.day() === 6;
         const opening = isWeekend ? slot.hour(9).minute(0) : slot.hour(8).minute(0);
-        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(18).minute(0);
+        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(17).minute(0);
         return slot.isSameOrAfter(opening) && slotEnd.isSameOrBefore(closing);
     };
 
+    useEffect(() => {
+        if (rescheduleTarget?.doctorName) {
+            setSelectedDoctor(rescheduleTarget.doctorName);
+        }
+        if (rescheduleTarget?.start && rescheduleTarget?.end) {
+            const minutes = Math.max(5, dayjs(rescheduleTarget.end).diff(dayjs(rescheduleTarget.start), 'minute'));
+            setDuration(minutes);
+            setCustomDuration(String(minutes));
+        }
+    }, [rescheduleTarget]);
     const events = useMemo(() => {
         return pendingEvent ? [pendingEvent] : [];
     }, [pendingEvent]);
@@ -153,9 +184,7 @@ export default function SchedulePage() {
     const handleNavigate = (direction) => {
         const increment = view === Views.DAY ? 'day' : view === Views.WEEK ? 'week' : 'month';
         const candidate =
-            direction === 'NEXT'
-                ? dayjs(currentDate).add(1, increment)
-                : dayjs(currentDate).subtract(1, increment);
+            direction === 'NEXT' ? dayjs(currentDate).add(1, increment) : dayjs(currentDate).subtract(1, increment);
         const today = dayjs().startOf('day');
         const newDate = candidate.isBefore(today) ? today.toDate() : candidate.toDate();
         setCurrentDate(newDate);
@@ -164,7 +193,7 @@ export default function SchedulePage() {
     const createPendingBooking = useCallback(
         (start) => {
             setCannotBookMessage('');
-            const booking = bookingDetails;
+            const booking = rescheduleTarget || bookingDetails;
             if (!booking) {
                 setCannotBookMessage('No booking details found. Please complete the booking form first.');
                 return;
@@ -194,12 +223,14 @@ export default function SchedulePage() {
 
             const pending = {
                 patientName: booking.patientName || 'Patient',
-                appointmentType: booking.appointmentType || 'Booked',
+                appointmentType: booking.appointmentType || booking.type || 'Booked',
                 duration,
                 start: startDate,
                 end: endDate,
-                doctorName: selectedDoctor,
-                notes: booking.notes || ''
+                doctorName: selectedDoctor || booking.doctorName,
+                doctorId: selectedDoctorObj?.id || booking.doctorId,
+                notes: booking.notes || '',
+                originalAppointmentId: rescheduleTarget?.id || null
             };
             try {
                 selectAppointment(pending);
@@ -208,7 +239,7 @@ export default function SchedulePage() {
                 setCannotBookMessage('Failed to prepare booking. Please try again.');
             }
         },
-        [bookingDetails, hasConflict, selectedDoctor, duration]
+        [bookingDetails, hasConflict, selectedDoctor, duration, rescheduleTarget, selectedDoctorObj]
     );
 
     const handleSelectSlot = useCallback(
@@ -238,7 +269,7 @@ export default function SchedulePage() {
         const base = baseDay.isBefore(today) ? today : baseDay;
         const isWeekend = base.day() === 0 || base.day() === 6;
         const startHour = isWeekend ? 9 : 8;
-        const endHour = isWeekend ? 14 : 18;
+        const endHour = isWeekend ? 14 : 17;
         const slots = [];
 
         for (let h = startHour; h < endHour; h++) {
@@ -256,11 +287,12 @@ export default function SchedulePage() {
 
     const slotPropGetter = (date) => {
         const end = dayjs(date).add(duration, 'minute').toDate();
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
         const allowed = selectedDoctor && isSlotWithinHours(date, end) && !hasConflict(date, end);
         if (!allowed) {
             return {
                 style: {
-                    backgroundColor: '#f3f4f6',
+                    backgroundColor: isWeekend ? '#f1f5f9' : '#f3f4f6',
                     color: '#9ca3af'
                 }
             };
@@ -272,6 +304,18 @@ export default function SchedulePage() {
         const start = range.start || range;
         const end = dayjs(start).add(duration, 'minute').toDate();
         return selectedDoctor && isSlotWithinHours(start, end) && !hasConflict(start, end);
+    };
+
+    const dayPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (isWeekend) {
+            return {
+                style: {
+                    backgroundColor: '#f8fafc'
+                }
+            };
+        }
+        return {};
     };
 
     const getHeaderText = () => {
@@ -299,6 +343,8 @@ export default function SchedulePage() {
             <Text>{doc.name}</Text>
         </Group>
     );
+
+    const selectedDoctorValue = selectedDoctor ?? '';
 
     return (
         <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
@@ -338,7 +384,12 @@ export default function SchedulePage() {
                         </Alert>
                     )}
 
-                    <Radio.Group name="appointment-doctor" value={selectedDoctor} onChange={setSelectedDoctor}>
+                    <Radio.Group
+                        name="appointment-doctor"
+                        value={selectedDoctorValue}
+                        defaultValue=""
+                        onChange={(value) => setSelectedDoctor(value || '')}
+                    >
                         <Stack gap="sm">
                             {doctors.map((doc) => (
                                 <Radio
@@ -498,8 +549,9 @@ export default function SchedulePage() {
                         onSelectSlot={handleSelectSlot}
                         views={[Views.MONTH, Views.WEEK, Views.DAY]}
                         toolbar={false}
-                        min={new Date(2025, 9, 1, 8, 0)}
-                        max={new Date(2025, 9, 1, 18, 0)}
+                        dayPropGetter={dayPropGetter}
+                        min={new Date(1970, 0, 1, 8, 0, 0)}
+                        max={new Date(1970, 0, 1, 17, 0, 0)}
                     />
                     {!selectedDoctor && (
                         <Box

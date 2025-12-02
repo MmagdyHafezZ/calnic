@@ -23,25 +23,34 @@ import dayjs from 'dayjs';
 export default function ConfirmAppointment() {
     const router = useRouter();
     const addAppointment = useAppointmentsStore((s) => s.addAppointment);
+    const updateAppointment = useAppointmentsStore((s) => s.updateAppointment);
     const pending = useAppointmentsStore((s) => s.selectedAppointment);
     const clearSelectedAppointment = useAppointmentsStore((s) => s.clearSelectedAppointment);
 
     const handleConfirm = () => {
         if (!pending) return;
         const appointment = {
-            patientName: pending.patientName,
-            doctorName: pending.doctorName.slice(0, -2),
+            patientName: pending.patientName || 'Patient',
+            doctorName: pending.doctorName,
+            doctorId: pending.doctorId,
             title: pending.patientName ? `${pending.patientName} - Appointment` : 'Appointment',
             start: new Date(pending.start),
             end: new Date(pending.end),
-            type: pending.appointmentType || 'Booked',
-            notes: pending.notes || ''
+            type: pending.appointmentType || pending.type || 'Booked',
+            notes: pending.notes || '',
+            needsReschedule: false,
+            rescheduleNote: null,
+            conflictTimeOffId: null
         };
         try {
             console.log('pendingBooking', pending);
             console.log('start type', typeof pending.start, pending.start);
             console.log('end type', typeof pending.end, pending.end);
-            addAppointment(appointment);
+            if (pending.originalAppointmentId) {
+                updateAppointment(pending.originalAppointmentId, appointment);
+            } else {
+                addAppointment(appointment);
+            }
             clearSelectedAppointment();
             router.push('/appointment-receipt');
         } catch (e) {
@@ -130,7 +139,7 @@ export default function ConfirmAppointment() {
                                 </Box>
                                 <Paper shadow="none" radius="lg" p="xs" bg="#ededed" style={{ flex: 1 }}>
                                     <Text ta="left" weight={500}>
-                                        {pending.doctorName.slice(0, -2)}
+                                        {pending.doctorName}
                                     </Text>
                                 </Paper>
                             </Flex>

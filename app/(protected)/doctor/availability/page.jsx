@@ -14,7 +14,7 @@ const localizer = dayjsLocalizer(dayjs);
 export default function DoctorAvailabilityPage() {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
-    const { addDoctorTimeOff, deleteAppointment, appointments } = useAppointmentsStore();
+    const { addDoctorTimeOff, deleteAppointment, appointments, flagAppointmentsForReschedule } = useAppointmentsStore();
     const { doctors } = useDoctorsStore();
 
     const [start, setStart] = useState('');
@@ -24,6 +24,9 @@ export default function DoctorAvailabilityPage() {
     const [step, setStep] = useState('form'); // form | confirm | success
     const [view, setView] = useState(Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [conflicts, setConflicts] = useState([]);
+    const [warning, setWarning] = useState('');
+    const [hadConflictOnLastSave, setHadConflictOnLastSave] = useState(false);
 
     const doctor = useMemo(() => {
         if (!user) return null;
@@ -53,9 +56,10 @@ export default function DoctorAvailabilityPage() {
             .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf());
     }, [doctorEvents]);
 
-    const hasConflict = useCallback(
+    const getAppointmentConflicts = useCallback(
         (startDate, endDate) => {
-            return doctorEvents.some((ev) => {
+            return doctorEvents.filter((ev) => {
+                if (ev.isTimeOff) return false;
                 const evStart = ev.start instanceof Date ? ev.start : new Date(ev.start);
                 const evEnd = ev.end instanceof Date ? ev.end : new Date(ev.end);
                 return startDate < evEnd && endDate > evStart;
@@ -63,6 +67,15 @@ export default function DoctorAvailabilityPage() {
         },
         [doctorEvents]
     );
+
+    const isWithinClinicHours = (startDate, endDate) => {
+        const slot = dayjs(startDate);
+        const slotEnd = dayjs(endDate);
+        const isWeekend = slot.day() === 0 || slot.day() === 6;
+        const opening = isWeekend ? slot.hour(9).minute(0) : slot.hour(8).minute(0);
+        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(17).minute(0);
+        return slot.isSameOrAfter(opening) && slotEnd.isSameOrBefore(closing);
+    };
 
     const eventStyleGetter = (event) => {
         let backgroundColor = '#e5e7eb';
@@ -94,10 +107,17 @@ export default function DoctorAvailabilityPage() {
             setError('Cannot set past time.');
             return;
         }
-        if (hasConflict(baseStart, baseEnd)) {
-            setError('Time overlaps an existing appointment or time off.');
+        if (!isWithinClinicHours(baseStart, baseEnd)) {
+            setError('Please choose a time between 8am-5pm on weekdays or 9am-2pm on weekends.');
             return;
         }
+        const overlaps = getAppointmentConflicts(baseStart, baseEnd);
+        setConflicts(overlaps);
+        setWarning(
+            overlaps.length
+                ? 'This time off overlaps existing appointments. Front desk will be notified to reschedule.'
+                : ''
+        );
         setStart(dayjs(baseStart).format('YYYY-MM-DDTHH:mm'));
         setEnd(dayjs(baseEnd).format('YYYY-MM-DDTHH:mm'));
         setStep('form');
@@ -120,8 +140,15 @@ export default function DoctorAvailabilityPage() {
             setError('End time must be after start time.');
             return false;
         }
-        if (hasConflict(startDate, endDate)) {
-            setError('Time overlaps an existing appointment or time off.');
+        const overlaps = getAppointmentConflicts(startDate, endDate);
+        setConflicts(overlaps);
+        setWarning(
+            overlaps.length
+                ? 'This time off overlaps existing appointments. Front desk will be notified to reschedule.'
+                : ''
+        );
+        if (!isWithinClinicHours(startDate, endDate)) {
+            setError('Please choose a time between 8am-5pm on weekdays or 9am-2pm on weekends.');
             return false;
         }
         if (!reason.trim()) {
@@ -141,16 +168,63 @@ export default function DoctorAvailabilityPage() {
         if (!doctor) return;
         const startDate = new Date(start);
         const endDate = new Date(end);
-        addDoctorTimeOff(doctor.id, doctor.name, startDate, endDate, reason || 'Unavailable');
+        const overlaps = [...conflicts];
+        const timeOffBlock = addDoctorTimeOff(doctor.id, doctor.name, startDate, endDate, reason || 'Unavailable');
+        if (overlaps.length > 0) {
+            flagAppointmentsForReschedule(
+                overlaps.map((c) => c.id),
+                `${doctor.name} marked time off ${dayjs(startDate).format('MMM D h:mm A')} - ${dayjs(endDate).format(
+                    'h:mm A'
+                )}. Please reschedule this appointment.`,
+                timeOffBlock?.id
+            );
+        }
+        setHadConflictOnLastSave(overlaps.length > 0);
         setStep('success');
+        setWarning('');
+        setConflicts([]);
     };
 
     const resetForm = () => {
         setStep('form');
         setError('');
+        setWarning('');
+        setConflicts([]);
+        setHadConflictOnLastSave(false);
     };
 
     const doctorLabel = doctor?.name ? `Availability for ${doctor.name}` : 'Change Availability';
+    const slotPropGetter = (date) => {
+        const endDate = dayjs(date).add(60, 'minute').toDate();
+        const weekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (!isWithinClinicHours(date, endDate)) {
+            return {
+                style: {
+                    backgroundColor: weekend ? '#f1f5f9' : '#f3f4f6',
+                    color: '#9ca3af'
+                }
+            };
+        }
+        return {};
+    };
+
+    const onSelecting = (range) => {
+        const startDate = range.start || range;
+        const endDate = range.end || dayjs(startDate).add(60, 'minute').toDate();
+        return isWithinClinicHours(startDate, endDate);
+    };
+
+    const dayPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (isWeekend) {
+            return {
+                style: {
+                    backgroundColor: '#f8fafc'
+                }
+            };
+        }
+        return {};
+    };
 
     return (
         <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
@@ -209,6 +283,23 @@ export default function DoctorAvailabilityPage() {
                                     <Text c="dimmed" size="sm">
                                         Reason: {reason || 'Unavailable'}
                                     </Text>
+                                    {warning && (
+                                        <Alert color="yellow" variant="light" title="Conflicts">
+                                            <Stack gap={4}>
+                                                <Text size="sm">{warning}</Text>
+                                                {conflicts.length > 0 && (
+                                                    <Stack gap={2}>
+                                                        {conflicts.map((c) => (
+                                                            <Text key={c.id} size="xs" c="dimmed">
+                                                                {c.patientName || 'Appointment'} —{' '}
+                                                                {dayjs(c.start).format('MMM D h:mm A')}
+                                                            </Text>
+                                                        ))}
+                                                    </Stack>
+                                                )}
+                                            </Stack>
+                                        </Alert>
+                                    )}
                                     <Group justify="flex-end">
                                         <Button variant="light" onClick={resetForm}>
                                             Back
@@ -224,6 +315,11 @@ export default function DoctorAvailabilityPage() {
                                     <Text c="dimmed" size="sm">
                                         Your time off has been added to the schedule.
                                     </Text>
+                                    {hadConflictOnLastSave && (
+                                        <Alert color="yellow" variant="light">
+                                            Front desk has been notified to reschedule any overlapping appointments.
+                                        </Alert>
+                                    )}
                                     <Group justify="flex-end">
                                         <Button variant="light" onClick={resetForm}>
                                             Add more
@@ -343,6 +439,11 @@ export default function DoctorAvailabilityPage() {
                             selectable
                             toolbar={false}
                             onSelectSlot={selectSlot}
+                            onSelecting={onSelecting}
+                            slotPropGetter={slotPropGetter}
+                            dayPropGetter={dayPropGetter}
+                            min={new Date(1970, 0, 1, 8, 0, 0)}
+                            max={new Date(1970, 0, 1, 17, 0, 0)}
                         />
                     </Paper>
                 </Box>

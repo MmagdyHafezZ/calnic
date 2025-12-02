@@ -44,8 +44,14 @@ export default function DashboardPage() {
     const router = useRouter();
 
     const { user, isAuthenticated, logout } = useAuthStore();
-    const { appointments, getAppointmentsInRange, selectedAppointment, selectAppointment, clearSelectedAppointment } =
-        useAppointmentsStore();
+    const {
+        appointments,
+        getAppointmentsInRange,
+        selectedAppointment,
+        selectAppointment,
+        clearSelectedAppointment,
+        clearRescheduleFlag
+    } = useAppointmentsStore();
     const { doctors } = useDoctorsStore();
     const { patients } = usePatientsStore();
     const {
@@ -88,6 +94,10 @@ export default function DashboardPage() {
     }, [doctors, selectedDoctors, selectAllDoctors]);
 
     const handleSelectEvent = (event) => {
+        if (event.start) {
+            setCalendarView('day');
+            setCurrentDate(event.start);
+        }
         selectAppointment(event);
         openAppointmentDetailsModal();
     };
@@ -101,6 +111,7 @@ export default function DashboardPage() {
         let backgroundColor = '#e5e7eb'; // default gray
         let color = '#374151'; // default dark gray
         let border = 'none';
+        const flagged = event.needsReschedule;
 
         const isSelected =
             selectedAppointment &&
@@ -147,6 +158,21 @@ export default function DashboardPage() {
             };
         }
 
+        if (flagged) {
+            return {
+                style: {
+                    backgroundColor: '#fef2f2',
+                    color: '#b91c1c',
+                    border: '1px solid #ef4444',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    padding: '4px 8px',
+                    fontWeight: 700,
+                    boxShadow: '0 0 0 2px rgba(239,68,68,0.15)'
+                }
+            };
+        }
+
         // If appointment has a doctor, use doctor's color
         if (event.doctorId) {
             const doctor = doctors.find((d) => d.id === event.doctorId);
@@ -179,6 +205,39 @@ export default function DashboardPage() {
                 fontWeight: '500'
             }
         };
+    };
+
+    const isWithinClinicHours = (startDate) => {
+        const slot = dayjs(startDate);
+        const isWeekend = slot.day() === 0 || slot.day() === 6;
+        const opening = isWeekend ? slot.hour(9).minute(0) : slot.hour(8).minute(0);
+        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(17).minute(0);
+        return slot.isSameOrAfter(opening) && slot.isBefore(closing);
+    };
+
+    const slotPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (!isWithinClinicHours(date)) {
+            return {
+                style: {
+                    backgroundColor: isWeekend ? '#f1f5f9' : '#f3f4f6',
+                    color: '#9ca3af'
+                }
+            };
+        }
+        return {};
+    };
+
+    const dayPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (isWeekend) {
+            return {
+                style: {
+                    backgroundColor: '#f8fafc'
+                }
+            };
+        }
+        return {};
     };
 
     // Filter appointments based on selected doctors and patient search
@@ -301,6 +360,21 @@ export default function DashboardPage() {
             .filter(Boolean);
     };
 
+    const rescheduleAppointments = useMemo(
+        () => appointments.filter((apt) => apt.needsReschedule),
+        [appointments]
+    );
+
+    const goToReschedule = (apt) => {
+        if (apt.start) {
+            setCalendarView('day');
+            setCurrentDate(apt.start);
+        }
+        selectAppointment(apt);
+        const doctorParam = apt.doctorId ? `?doctorId=${apt.doctorId}` : '';
+        router.push(`/schedule-appointment${doctorParam}`);
+    };
+
     return (
         <>
             <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
@@ -335,6 +409,74 @@ export default function DashboardPage() {
                             >
                                 Add Patient
                             </Button>
+
+                            {rescheduleAppointments.length > 0 && (
+                                <Paper p="md" withBorder style={{ backgroundColor: '#fef2f2', borderColor: '#ef4444' }}>
+                                    <Group justify="space-between" mb="xs">
+                                        <Group gap="xs">
+                                            <IconCalendar size={18} color="#b91c1c" />
+                                            <Text fw={700} size="sm" c="red.8">
+                                                Needs reschedule
+                                            </Text>
+                                        </Group>
+                                        <Badge color="red" variant="filled">
+                                            {rescheduleAppointments.length}
+                                        </Badge>
+                                    </Group>
+                                    <Stack gap="sm">
+                                        {rescheduleAppointments.map((apt) => (
+                                            <Box
+                                                key={apt.id}
+                                                style={{
+                                                    borderBottom: '1px solid #fecdd3',
+                                                    paddingBottom: 8,
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => {
+                                                    setCalendarView('day');
+                                                    setCurrentDate(apt.start);
+                                                    selectAppointment(apt);
+                                                    openAppointmentDetailsModal();
+                                                }}
+                                            >
+                                                <Stack gap={4}>
+                                                    <Group justify="space-between">
+                                                        <Text fw={700} size="sm" c="red.8">
+                                                            {apt.patientName || 'Appointment'}
+                                                        </Text>
+                                                        {apt.doctorName && (
+                                                            <Badge size="xs" color="red" variant="light">
+                                                                {apt.doctorName}
+                                                            </Badge>
+                                                        )}
+                                                    </Group>
+                                                    <Text size="xs" c="dimmed">
+                                                        {dayjs(apt.start).format('MMM D, h:mm A')} - {dayjs(apt.end).format('h:mm A')}
+                                                    </Text>
+                                                    {apt.rescheduleNote && (
+                                                        <Text size="xs" c="red.8">
+                                                            {apt.rescheduleNote}
+                                                        </Text>
+                                                    )}
+                                                    <Group gap="xs" mt={4}>
+                                                        <Button size="xs" color="red" onClick={() => goToReschedule(apt)}>
+                                                            Reschedule
+                                                        </Button>
+                                                        <Button
+                                                            size="xs"
+                                                            variant="outline"
+                                                            color="red"
+                                                            onClick={() => clearRescheduleFlag(apt.id)}
+                                                        >
+                                                            Dismiss
+                                                        </Button>
+                                                    </Group>
+                                                </Stack>
+                                            </Box>
+                                        ))}
+                                    </Stack>
+                                </Paper>
+                            )}
 
                             <Paper p="md" mt="xl" withBorder>
                                 <Group mb="md" justify="space-between">
@@ -462,8 +604,10 @@ export default function DashboardPage() {
                                 eventPropGetter={eventStyleGetter}
                                 onSelectEvent={handleSelectEvent}
                                 toolbar={false}
-                                min={new Date(2025, 9, 1, 8, 0)}
-                                max={new Date(2025, 9, 1, 18, 0)}
+                                slotPropGetter={slotPropGetter}
+                                dayPropGetter={dayPropGetter}
+                                min={new Date(1970, 0, 1, 8, 0, 0)}
+                                max={new Date(1970, 0, 1, 17, 0, 0)}
                             />
                         </Box>
 
@@ -632,7 +776,9 @@ export default function DashboardPage() {
                                         <Stack gap="sm">
                                             {todayAppointments.map((apt, idx) => (
                                                 <Paper
-                                                    key={`${apt.id ?? 'apt'}-${apt.start ? new Date(apt.start).getTime() : 'nostart'}-${idx}`}
+                                                    key={`${apt.id ?? 'apt'}-${
+                                                        apt.start ? new Date(apt.start).getTime() : 'nostart'
+                                                    }-${idx}`}
                                                     p="sm"
                                                     withBorder
                                                     onClick={() => {

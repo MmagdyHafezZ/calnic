@@ -40,6 +40,11 @@
 }
 
 @layer components {
+    /* Make Mantine buttons pill-shaped by default */
+    .mantine-Button-root {
+        border-radius: 9999px !important;
+    }
+
     .markdown {
         > * {
             @apply my-4;

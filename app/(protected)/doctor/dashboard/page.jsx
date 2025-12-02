@@ -5,7 +5,21 @@ import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { AppShell, Box, Button, Card, Group, Stack, Title, Select, Text, Paper, Badge } from '@mantine/core';
+import {
+    AppShell,
+    Box,
+    Button,
+    Card,
+    Group,
+    Stack,
+    Title,
+    Select,
+    Text,
+    Paper,
+    Badge,
+    Modal,
+    Divider
+} from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useAppointmentsStore, useDoctorsStore, usePatientsStore, useAuthStore } from '../../../../store';
 
@@ -21,6 +35,7 @@ export default function DoctorDashboardPage() {
     const [view, setView] = useState(Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [status, setStatus] = useState('Appt');
+    const [detailsOpen, setDetailsOpen] = useState(false);
 
     const doctor = useMemo(() => {
         if (!user) return null;
@@ -86,8 +101,42 @@ export default function DoctorDashboardPage() {
         };
     };
 
+    const isWithinClinicHours = (startDate) => {
+        const slot = dayjs(startDate);
+        const isWeekend = slot.day() === 0 || slot.day() === 6;
+        const opening = isWeekend ? slot.hour(9).minute(0) : slot.hour(8).minute(0);
+        const closing = isWeekend ? slot.hour(14).minute(0) : slot.hour(17).minute(0);
+        return slot.isSameOrAfter(opening) && slot.isBefore(closing);
+    };
+
+    const slotPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (!isWithinClinicHours(date)) {
+            return {
+                style: {
+                    backgroundColor: isWeekend ? '#f1f5f9' : '#f3f4f6',
+                    color: '#9ca3af'
+                }
+            };
+        }
+        return {};
+    };
+
+    const dayPropGetter = (date) => {
+        const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
+        if (isWeekend) {
+            return {
+                style: {
+                    backgroundColor: '#f8fafc'
+                }
+            };
+        }
+        return {};
+    };
+
     const handleSelectEvent = (event) => {
         selectAppointment(event);
+        setDetailsOpen(true);
     };
 
     const handleUpdateStatus = (value) => {
@@ -130,6 +179,12 @@ export default function DoctorDashboardPage() {
                 {apt.reason && <Text size="sm">Reason: {apt.reason}</Text>}
                 {patient?.email && <Text size="sm">Email: {patient.email}</Text>}
                 {patient?.phone && <Text size="sm">Phone: {patient.phone}</Text>}
+                {apt.notes && (
+                    <>
+                        <Divider my="xs" />
+                        <Text size="sm">{apt.notes}</Text>
+                    </>
+                )}
             </Stack>
         );
     };
@@ -239,6 +294,10 @@ export default function DoctorDashboardPage() {
                             eventPropGetter={eventStyleGetter}
                             onSelectEvent={handleSelectEvent}
                             toolbar={false}
+                            slotPropGetter={slotPropGetter}
+                            dayPropGetter={dayPropGetter}
+                            min={new Date(1970, 0, 1, 8, 0, 0)}
+                            max={new Date(1970, 0, 1, 17, 0, 0)}
                         />
                     </Box>
                 </Box>
@@ -269,6 +328,7 @@ export default function DoctorDashboardPage() {
                                         setView(Views.DAY);
                                         setCurrentDate(apt.start);
                                         selectAppointment(apt);
+                                        setDetailsOpen(true);
                                     }}
                                 >
                                     <Text fw={600} size="sm">
@@ -296,6 +356,37 @@ export default function DoctorDashboardPage() {
                     </Card>
                 </Box>
             </Box>
+
+            <Modal
+                opened={detailsOpen && !!selectedAppointment}
+                onClose={() => setDetailsOpen(false)}
+                title={selectedAppointment?.isTimeOff ? 'Time off details' : 'Appointment details'}
+                centered
+                size="lg"
+            >
+                {selectedAppointment ? (
+                    <Stack gap="sm">
+                        {selectedAppointment.isTimeOff ? (
+                            <>
+                                <Text fw={600}>
+                                    {selectedAppointment.doctorName || doctor?.name || 'Doctor'} - Time off
+                                </Text>
+                                {selectedAppointment.reason && <Text c="dimmed">{selectedAppointment.reason}</Text>}
+                                <Text size="sm">
+                                    {dayjs(selectedAppointment.start).format('dddd, MMM D, YYYY h:mm A')} -{' '}
+                                    {dayjs(selectedAppointment.end).format('h:mm A')}
+                                </Text>
+                            </>
+                        ) : (
+                            renderAppointmentDetails(selectedAppointment)
+                        )}
+                    </Stack>
+                ) : (
+                    <Text c="dimmed" size="sm">
+                        Select an appointment to view details.
+                    </Text>
+                )}
+            </Modal>
         </AppShell.Main>
     );
 }

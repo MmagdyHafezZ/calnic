@@ -67,6 +67,44 @@ const useAppointmentsStore = create(
                     return timeOffBlock;
                 },
 
+                flagAppointmentsForReschedule: (appointmentIds, note, conflictTimeOffId = null) => {
+                    set(
+                        (state) => ({
+                            appointments: state.appointments.map((apt) =>
+                                appointmentIds.includes(apt.id)
+                                    ? {
+                                          ...apt,
+                                          needsReschedule: true,
+                                          rescheduleNote: note,
+                                          conflictTimeOffId
+                                      }
+                                    : apt
+                            )
+                        }),
+                        false,
+                        'appointments/flagAppointmentsForReschedule'
+                    );
+                },
+
+                clearRescheduleFlag: (appointmentId) => {
+                    set(
+                        (state) => ({
+                            appointments: state.appointments.map((apt) =>
+                                apt.id === appointmentId
+                                    ? {
+                                          ...apt,
+                                          needsReschedule: false,
+                                          rescheduleNote: null,
+                                          conflictTimeOffId: null
+                                      }
+                                    : apt
+                            )
+                        }),
+                        false,
+                        'appointments/clearRescheduleFlag'
+                    );
+                },
+
                 // Check if a time slot conflicts with existing appointments or time-off
                 hasConflict: (doctorId, start, end, excludeAppointmentId = null) => {
                     const startTime = dayjs(start);

@@ -49,10 +49,18 @@ export default function ConfirmAppointment() {
             console.log('pendingBooking', pending);
             console.log('start type', typeof pending.start, pending.start);
             console.log('end type', typeof pending.end, pending.end);
+            let saved = { ...appointment };
             if (pending.originalAppointmentId) {
                 updateAppointment(pending.originalAppointmentId, appointment);
+                saved.id = pending.originalAppointmentId;
             } else {
-                addAppointment(appointment);
+                const created = addAppointment(appointment);
+                saved = created || saved;
+            }
+            try {
+                localStorage.setItem('lastAppointmentReceipt', JSON.stringify(saved));
+            } catch (e) {
+                console.warn('Could not persist appointment receipt', e);
             }
             clearSelectedAppointment();
             router.push('/appointment-receipt');

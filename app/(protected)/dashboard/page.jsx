@@ -74,11 +74,49 @@ export default function DashboardPage() {
         closeBookingModal
     } = useUIStore();
 
+    const [now, setNow] = useState(() => dayjs());
+
     useEffect(() => {
         if (!isAuthenticated) {
             router.push('/');
         }
     }, [isAuthenticated, router]);
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(dayjs()), 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    const normalizedAppointments = useMemo(
+        () =>
+            (appointments || []).map((apt) => ({
+                ...apt,
+                start: apt.start instanceof Date ? apt.start : new Date(apt.start),
+                end: apt.end instanceof Date ? apt.end : new Date(apt.end)
+            })),
+        [appointments]
+    );
+
+    const getLiveStatus = useCallback(
+        (doctor) => {
+            const current = normalizedAppointments.find((apt) => {
+                if (apt.doctorId !== doctor.id) return false;
+                const start = dayjs(apt.start);
+                const end = dayjs(apt.end);
+                if (!start.isValid() || !end.isValid()) return false;
+                if (!start.isSame(now, 'day')) return false;
+                return now.isSame(start) || (now.isAfter(start) && now.isBefore(end));
+            });
+            if (current?.isTimeOff || current?.type === 'Time Off') {
+                return { label: 'Time Off', color: 'red' };
+            }
+            if (current) {
+                return { label: 'In Appointment', color: 'blue' };
+            }
+            return { label: doctor.status || 'Available', color: doctor.colorName || 'gray' };
+        },
+        [normalizedAppointments, now]
+    );
 
     const flatDiagnosticQuestions = useMemo(() => {
         return diagnosticQuestions.flatMap((section) =>
@@ -117,6 +155,15 @@ export default function DashboardPage() {
         closeAppointmentDetailsModal();
         clearSelectedAppointment();
     };
+
+    const handleEditAppointment = useCallback(() => {
+        if (!selectedAppointment) return;
+        const doctorIdParam = selectedAppointment.doctorId ? `?doctorId=${selectedAppointment.doctorId}` : '';
+        setCalendarView('day');
+        setCurrentDate(selectedAppointment.start || new Date());
+        closeAppointmentDetailsModal();
+        router.push(`/schedule-appointment${doctorIdParam}`);
+    }, [selectedAppointment, setCalendarView, setCurrentDate, closeAppointmentDetailsModal, router]);
 
     const diagnosticSummary = useMemo(() => {
         const answers = selectedAppointment?.diagnosticAnswers;
@@ -550,8 +597,8 @@ export default function DashboardPage() {
                                                 }
                                                 size="sm"
                                             />
-                                            <Badge size="sm" color={doctor.colorName} variant="light">
-                                                {doctor.status}
+                                            <Badge size="sm" color={getLiveStatus(doctor).color} variant="light">
+                                                {getLiveStatus(doctor).label}
                                             </Badge>
                                         </Group>
                                     ))}
@@ -606,7 +653,7 @@ export default function DashboardPage() {
                             size="md"
                             centered
                         >
-                            {selectedAppointment && (
+                            {selectedAppointment ? (
                                 <Stack gap="md">
                                     {selectedAppointment.isTimeOff ? (
                                         <>
@@ -771,9 +818,19 @@ export default function DashboardPage() {
                                                     </Stack>
                                                 </Box>
                                             )}
+
+                                            <Group mt="md" gap="sm">
+                                                <Button size="sm" onClick={handleEditAppointment}>
+                                                    Change appointment
+                                                </Button>
+                                            </Group>
                                         </>
                                     )}
                                 </Stack>
+                            ) : (
+                                <Text c="dimmed" size="sm">
+                                    Select an appointment to view details.
+                                </Text>
                             )}
                         </Modal>
                     </Box>

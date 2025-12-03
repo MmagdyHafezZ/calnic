@@ -29,7 +29,8 @@ const localizer = dayjsLocalizer(dayjs);
 export default function DoctorDashboardPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    const { appointments, selectedAppointment, selectAppointment, clearSelectedAppointment } = useAppointmentsStore();
+    const { appointments, addDoctorTimeOff, selectedAppointment, selectAppointment, clearSelectedAppointment } =
+        useAppointmentsStore();
     const { doctors, updateDoctorStatus } = useDoctorsStore();
     const { patients } = usePatientsStore();
 
@@ -37,6 +38,7 @@ export default function DoctorDashboardPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [status, setStatus] = useState('Appt');
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [now, setNow] = useState(() => dayjs());
 
     const doctor = useMemo(() => {
         if (!user) return null;
@@ -58,6 +60,11 @@ export default function DoctorDashboardPage() {
             router.push('/doctor');
         }
     }, [isAuthenticated, user, router]);
+
+    useEffect(() => {
+        const id = setInterval(() => setNow(dayjs()), 30000);
+        return () => clearInterval(id);
+    }, []);
 
     useEffect(() => {
         if (doctor?.status) {
@@ -83,6 +90,19 @@ export default function DoctorDashboardPage() {
             .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
             .slice(0, 10);
     }, [doctorEvents]);
+
+    const liveStatus = useMemo(() => {
+        const current = doctorEvents.find((ev) => {
+            const start = dayjs(ev.start);
+            const end = dayjs(ev.end);
+            if (!start.isValid() || !end.isValid()) return false;
+            if (!start.isSame(now, 'day')) return false;
+            return now.isSame(start) || (now.isAfter(start) && now.isBefore(end));
+        });
+        if (current?.isTimeOff || current?.type === 'Time Off') return 'Time Off';
+        if (current) return 'In Appointment';
+        return status || 'Appt';
+    }, [doctorEvents, now, status]);
 
     const eventStyleGetter = (event) => {
         let backgroundColor = doctor?.color || '#3b82f6';
@@ -110,6 +130,43 @@ export default function DoctorDashboardPage() {
                 fontWeight: 500
             }
         };
+    };
+
+    const handleSelectSlot = (slotInfo) => {
+        if (!doctor) return;
+        const startRaw = slotInfo.start || slotInfo;
+        const endRaw = slotInfo.end || slotInfo;
+        const start = startRaw instanceof Date ? startRaw : new Date(startRaw);
+        const end = endRaw instanceof Date ? endRaw : new Date(endRaw);
+        if (!dayjs(start).isValid() || dayjs(start).isBefore(dayjs())) return;
+
+        // Month view: allow selecting multiple days to mark unavailable
+        if (view === Views.MONTH) {
+            const startDay = dayjs(start).startOf('day');
+            const endDay = dayjs(end).startOf('day');
+            const days = Math.max(0, endDay.diff(startDay, 'day'));
+            for (let i = 0; i <= days; i++) {
+                const day = startDay.add(i, 'day');
+                const weekend = day.day() === 0 || day.day() === 6;
+                const dayStart = day.hour(weekend ? 9 : 8).minute(0).second(0).millisecond(0).toDate();
+                const dayEnd = day.hour(weekend ? 14 : 17).minute(0).second(0).millisecond(0).toDate();
+                const existingTimeOff = doctorEvents.find(
+                    (ev) =>
+                        (ev.isTimeOff || ev.type === 'Time Off') &&
+                        dayjs(ev.start).isSame(day, 'day') &&
+                        dayjs(ev.end).isSame(day, 'day')
+                );
+                if (!existingTimeOff) {
+                    addDoctorTimeOff(doctor.id, doctor.name, dayStart, dayEnd, 'Unavailable');
+                }
+            }
+            return;
+        }
+
+        // Week/Day view: create a time-off block for the selected range
+        const selectedEnd = slotInfo.end ? end : dayjs(start).add(60, 'minute').toDate();
+        if (!isWithinClinicHours(start, selectedEnd)) return;
+        addDoctorTimeOff(doctor.id, doctor.name, start, selectedEnd, 'Unavailable');
     };
 
     const isWithinClinicHours = (startDate) => {
@@ -259,6 +316,14 @@ export default function DoctorDashboardPage() {
                         <Card withBorder radius="md" shadow="sm">
                             <Stack gap="sm">
                                 <Title order={4}>{doctor.name}</Title>
+                                <Group gap="xs">
+                                    <Badge color={liveStatus === 'Time Off' ? 'red' : liveStatus === 'In Appointment' ? 'blue' : 'green'} variant="light">
+                                        {liveStatus}
+                                    </Badge>
+                                    <Text size="sm" c="dimmed">
+                                        Live status
+                                    </Text>
+                                </Group>
                                 <Select
                                     label="Status"
                                     data={['Appt', 'Operating', 'In Break', 'Remote']}
@@ -295,6 +360,8 @@ export default function DoctorDashboardPage() {
                             onNavigate={(date) => setCurrentDate(date)}
                             eventPropGetter={eventStyleGetter}
                             onSelectEvent={handleSelectEvent}
+                            selectable
+                            onSelectSlot={handleSelectSlot}
                             slotPropGetter={slotPropGetter}
                             dayPropGetter={dayPropGetter}
                             min={new Date(1970, 0, 1, 8, 0, 0)}

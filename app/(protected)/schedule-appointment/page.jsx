@@ -91,7 +91,7 @@ export default function SchedulePage() {
     const [rescheduleTarget, setRescheduleTarget] = useState(null);
 
     useEffect(() => {
-        if (normalizedSelectedAppointment?.needsReschedule) {
+        if (normalizedSelectedAppointment?.needsReschedule || normalizedSelectedAppointment?.id) {
             setRescheduleTarget(normalizedSelectedAppointment);
         }
     }, [normalizedSelectedAppointment]);

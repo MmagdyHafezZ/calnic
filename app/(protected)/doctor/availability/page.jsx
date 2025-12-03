@@ -27,6 +27,8 @@ export default function DoctorAvailabilityPage() {
     const [conflicts, setConflicts] = useState([]);
     const [warning, setWarning] = useState('');
     const [hadConflictOnLastSave, setHadConflictOnLastSave] = useState(false);
+    const [selectedDayOffDates, setSelectedDayOffDates] = useState([]); // YYYY-MM-DD strings
+    const [pendingTimeOff, setPendingTimeOff] = useState(null);
 
     const doctor = useMemo(() => {
         if (!user) return null;
@@ -49,6 +51,10 @@ export default function DoctorAvailabilityPage() {
                 end: apt.end instanceof Date ? apt.end : new Date(apt.end)
             }));
     }, [appointments, doctor]);
+
+    const calendarEvents = useMemo(() => {
+        return pendingTimeOff ? [...doctorEvents, pendingTimeOff] : doctorEvents;
+    }, [doctorEvents, pendingTimeOff]);
 
     const doctorTimeOff = useMemo(() => {
         return doctorEvents
@@ -94,19 +100,80 @@ export default function DoctorAvailabilityPage() {
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '0.75rem',
-                padding: '2px 4px'
+                padding: '2px 4px',
+                opacity: event.temp ? 0.65 : 1
             }
         };
     };
 
+    const updateRangeFromSelected = (dates) => {
+        if (!dates.length) {
+            setStart('');
+            setEnd('');
+            setPendingTimeOff(null);
+            return;
+        }
+        const sorted = [...dates].sort();
+        const first = dayjs(sorted[0]);
+        const last = dayjs(sorted[sorted.length - 1]);
+        const firstWeekend = first.day() === 0 || first.day() === 6;
+        const lastWeekend = last.day() === 0 || last.day() === 6;
+        const startDate = first.hour(firstWeekend ? 9 : 8).minute(0).second(0).millisecond(0);
+        const endDate = last.hour(lastWeekend ? 14 : 17).minute(0).second(0).millisecond(0);
+        setStart(startDate.format('YYYY-MM-DDTHH:mm'));
+        setEnd(endDate.format('YYYY-MM-DDTHH:mm'));
+        setPendingTimeOff({
+            id: 'pending-timeoff',
+            title: 'Pending Time Off',
+            start: startDate.toDate(),
+            end: endDate.toDate(),
+            isTimeOff: true,
+            type: 'Time Off',
+            temp: true
+        });
+    };
+
     const selectSlot = (slotInfo) => {
         const baseStart = slotInfo.start instanceof Date ? slotInfo.start : new Date(slotInfo.start);
-        const durationMinutes = 60;
-        const baseEnd = dayjs(baseStart).add(durationMinutes, 'minute').toDate();
-        if (dayjs(baseStart).isBefore(dayjs())) {
+        const baseEndRaw = slotInfo.end instanceof Date ? slotInfo.end : slotInfo.end ? new Date(slotInfo.end) : null;
+        const baseDay = dayjs(baseStart);
+        const rawEndDay = baseEndRaw ? dayjs(baseEndRaw) : baseDay;
+        if (baseDay.isBefore(dayjs())) {
             setError('Cannot set past time.');
             return;
         }
+
+        const startDay = baseDay.startOf('day');
+        let finalDay = rawEndDay.startOf('day');
+        // react-big-calendar month selection often gives end at 00:00 of the next day; adjust to avoid off-by-one
+        if (rawEndDay.isAfter(baseDay) && rawEndDay.hour() === 0 && rawEndDay.minute() === 0) {
+            finalDay = finalDay.subtract(1, 'day');
+        }
+        const spansDays = finalDay.isAfter(startDay);
+
+        // Full-day blocks when dragging across days or in month view
+        if (view === Views.MONTH || spansDays) {
+            const days = Math.max(0, finalDay.diff(startDay, 'day'));
+            const updated = new Set(selectedDayOffDates);
+            for (let i = 0; i <= days; i++) {
+                const day = startDay.add(i, 'day').format('YYYY-MM-DD');
+                if (updated.has(day)) {
+                    updated.delete(day);
+                } else {
+                    updated.add(day);
+                }
+            }
+            const newDates = Array.from(updated);
+            setSelectedDayOffDates(newDates);
+            updateRangeFromSelected(newDates);
+            setWarning('');
+            setConflicts([]);
+            setError('');
+            return;
+        }
+
+        const durationMinutes = 60;
+        const baseEnd = baseEndRaw || dayjs(baseStart).add(durationMinutes, 'minute').toDate();
         if (!isWithinClinicHours(baseStart, baseEnd)) {
             setError('Please choose a time between 8am-5pm on weekdays or 9am-2pm on weekends.');
             return;
@@ -120,6 +187,15 @@ export default function DoctorAvailabilityPage() {
         );
         setStart(dayjs(baseStart).format('YYYY-MM-DDTHH:mm'));
         setEnd(dayjs(baseEnd).format('YYYY-MM-DDTHH:mm'));
+        setPendingTimeOff({
+            id: 'pending-timeoff',
+            title: 'Pending Time Off',
+            start: baseStart,
+            end: baseEnd,
+            isTimeOff: true,
+            type: 'Time Off',
+            temp: true
+        });
         setStep('form');
         setError('');
     };
@@ -140,6 +216,7 @@ export default function DoctorAvailabilityPage() {
             setError('End time must be after start time.');
             return false;
         }
+        const spansDays = !dayjs(startDate).isSame(endDate, 'day');
         const overlaps = getAppointmentConflicts(startDate, endDate);
         setConflicts(overlaps);
         setWarning(
@@ -147,7 +224,7 @@ export default function DoctorAvailabilityPage() {
                 ? 'This time off overlaps existing appointments. Front desk will be notified to reschedule.'
                 : ''
         );
-        if (!isWithinClinicHours(startDate, endDate)) {
+        if (!spansDays && !isWithinClinicHours(startDate, endDate)) {
             setError('Please choose a time between 8am-5pm on weekdays or 9am-2pm on weekends.');
             return false;
         }
@@ -166,6 +243,35 @@ export default function DoctorAvailabilityPage() {
 
     const handleConfirm = () => {
         if (!doctor) return;
+        const daysToBlock = [...new Set(selectedDayOffDates)];
+        if (daysToBlock.length > 0) {
+            const conflictIds = new Set();
+            let lastBlockId = null;
+            daysToBlock.forEach((dayStr) => {
+                const day = dayjs(dayStr);
+                const weekend = day.day() === 0 || day.day() === 6;
+                const startDate = day.hour(weekend ? 9 : 8).minute(0).second(0).millisecond(0).toDate();
+                const endDate = day.hour(weekend ? 14 : 17).minute(0).second(0).millisecond(0).toDate();
+                const overlaps = getAppointmentConflicts(startDate, endDate);
+                overlaps.forEach((c) => conflictIds.add(c.id));
+                const block = addDoctorTimeOff(doctor.id, doctor.name, startDate, endDate, reason || 'Unavailable');
+                lastBlockId = block?.id || lastBlockId;
+            });
+            if (conflictIds.size > 0) {
+                flagAppointmentsForReschedule(
+                    Array.from(conflictIds),
+                    `${doctor.name} marked time off across ${daysToBlock.length} day(s). Please reschedule conflicting appointments.`,
+                    lastBlockId || null
+                );
+            }
+            setHadConflictOnLastSave(conflictIds.size > 0);
+            setWarning('');
+            setConflicts([]);
+            setStep('success');
+            setPendingTimeOff(null);
+            return;
+        }
+
         const startDate = new Date(start);
         const endDate = new Date(end);
         const overlaps = [...conflicts];
@@ -183,6 +289,7 @@ export default function DoctorAvailabilityPage() {
         setStep('success');
         setWarning('');
         setConflicts([]);
+        setPendingTimeOff(null);
     };
 
     const resetForm = () => {
@@ -191,6 +298,8 @@ export default function DoctorAvailabilityPage() {
         setWarning('');
         setConflicts([]);
         setHadConflictOnLastSave(false);
+        setSelectedDayOffDates([]);
+        setPendingTimeOff(null);
     };
 
     const doctorLabel = doctor?.name ? `Availability for ${doctor.name}` : 'Change Availability';
@@ -209,21 +318,29 @@ export default function DoctorAvailabilityPage() {
     };
 
     const onSelecting = (range) => {
+        if (view === Views.MONTH) return true;
         const startDate = range.start || range;
         const endDate = range.end || dayjs(startDate).add(60, 'minute').toDate();
+        // Allow multi-day drag in week/day without blocking
+        if (!dayjs(startDate).isSame(endDate, 'day')) return true;
         return isWithinClinicHours(startDate, endDate);
     };
 
     const dayPropGetter = (date) => {
+        const dayKey = dayjs(date).format('YYYY-MM-DD');
+        const isSelected = selectedDayOffDates.includes(dayKey);
         const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
-        if (isWeekend) {
+        const baseStyle = isWeekend ? { backgroundColor: '#f8fafc' } : {};
+        if (isSelected) {
             return {
                 style: {
-                    backgroundColor: '#f8fafc'
+                    ...baseStyle,
+                    outline: '2px solid #2563eb',
+                    backgroundColor: '#dbeafe'
                 }
             };
         }
-        return {};
+        return baseStyle ? { style: baseStyle } : {};
     };
 
     return (
@@ -372,7 +489,7 @@ export default function DoctorAvailabilityPage() {
                     <Paper withBorder radius="md" p="md" style={{ flex: 1, minHeight: 0 }}>
                         <Calendar
                             localizer={localizer}
-                            events={doctorEvents}
+                            events={calendarEvents}
                             startAccessor="start"
                             endAccessor="end"
                             style={{ height: '100%' }}

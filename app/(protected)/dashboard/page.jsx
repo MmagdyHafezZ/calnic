@@ -905,7 +905,7 @@ export default function DashboardPage() {
                                                     </Group>
                                                     <Group justify="space-between">
                                                         <Text size="xs" fw={500}>
-                                                            {dayjs(apt.start).format('ddd Do')}
+                                                            {dayjs(apt.start).format('ddd, MMM D')}
                                                         </Text>
                                                         <Text size="xs" fw={500}>
                                                             {dayjs(apt.start).format('H:mm')}

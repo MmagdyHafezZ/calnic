@@ -196,7 +196,7 @@ export default function DoctorDashboardPage() {
             <Stack gap="xs">
                 <Title order={4}>{apt.patientName}</Title>
                 <Text size="sm" c="dimmed">
-                    {dayjs(apt.start).format('dddd, MMM D, YYYY h:mm A')} - {dayjs(apt.end).format('h:mm A')}
+                    {dayjs(apt.start).format('ddd, MMM D, YYYY • h:mm A')} - {dayjs(apt.end).format('h:mm A')}
                 </Text>
                 {apt.type && (
                     <Badge size="sm" color="blue" variant="light">
@@ -336,7 +336,7 @@ export default function DoctorDashboardPage() {
                                         {apt.patientName}
                                     </Text>
                                     <Text size="xs" c="dimmed">
-                                        {dayjs(apt.start).format('MMM D, h:mm A')}
+                                        {dayjs(apt.start).format('ddd, MMM D • h:mm A')}
                                     </Text>
                                 </Paper>
                             ))}

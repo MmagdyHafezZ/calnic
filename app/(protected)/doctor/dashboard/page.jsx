@@ -29,8 +29,7 @@ const localizer = dayjsLocalizer(dayjs);
 export default function DoctorDashboardPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    const { appointments, addDoctorTimeOff, selectedAppointment, selectAppointment, clearSelectedAppointment } =
-        useAppointmentsStore();
+    const { appointments, selectedAppointment, selectAppointment, clearSelectedAppointment } = useAppointmentsStore();
     const { doctors, updateDoctorStatus } = useDoctorsStore();
     const { patients } = usePatientsStore();
 
@@ -132,43 +131,6 @@ export default function DoctorDashboardPage() {
         };
     };
 
-    const handleSelectSlot = (slotInfo) => {
-        if (!doctor) return;
-        const startRaw = slotInfo.start || slotInfo;
-        const endRaw = slotInfo.end || slotInfo;
-        const start = startRaw instanceof Date ? startRaw : new Date(startRaw);
-        const end = endRaw instanceof Date ? endRaw : new Date(endRaw);
-        if (!dayjs(start).isValid() || dayjs(start).isBefore(dayjs())) return;
-
-        // Month view: allow selecting multiple days to mark unavailable
-        if (view === Views.MONTH) {
-            const startDay = dayjs(start).startOf('day');
-            const endDay = dayjs(end).startOf('day');
-            const days = Math.max(0, endDay.diff(startDay, 'day'));
-            for (let i = 0; i <= days; i++) {
-                const day = startDay.add(i, 'day');
-                const weekend = day.day() === 0 || day.day() === 6;
-                const dayStart = day.hour(weekend ? 9 : 8).minute(0).second(0).millisecond(0).toDate();
-                const dayEnd = day.hour(weekend ? 14 : 17).minute(0).second(0).millisecond(0).toDate();
-                const existingTimeOff = doctorEvents.find(
-                    (ev) =>
-                        (ev.isTimeOff || ev.type === 'Time Off') &&
-                        dayjs(ev.start).isSame(day, 'day') &&
-                        dayjs(ev.end).isSame(day, 'day')
-                );
-                if (!existingTimeOff) {
-                    addDoctorTimeOff(doctor.id, doctor.name, dayStart, dayEnd, 'Unavailable');
-                }
-            }
-            return;
-        }
-
-        // Week/Day view: create a time-off block for the selected range
-        const selectedEnd = slotInfo.end ? end : dayjs(start).add(60, 'minute').toDate();
-        if (!isWithinClinicHours(start, selectedEnd)) return;
-        addDoctorTimeOff(doctor.id, doctor.name, start, selectedEnd, 'Unavailable');
-    };
-
     const isWithinClinicHours = (startDate) => {
         const slot = dayjs(startDate);
         const isWeekend = slot.day() === 0 || slot.day() === 6;
@@ -211,21 +173,6 @@ export default function DoctorDashboardPage() {
         if (!doctor) return;
         setStatus(value);
         updateDoctorStatus(doctor.id, value, doctor.color);
-    };
-
-    const handleAddTimeOff = () => {
-        if (!doctor || !timeOffStart || !timeOffEnd) return;
-        addDoctorTimeOff(
-            doctor.id,
-            doctor.name,
-            new Date(timeOffStart),
-            new Date(timeOffEnd),
-            timeOffReason || 'Time Off'
-        );
-        setTimeOffOpen(false);
-        setTimeOffStart('');
-        setTimeOffEnd('');
-        setTimeOffReason('Time Off');
     };
 
     const getPatientDetails = (name) => patients.find((p) => p.name === name);
@@ -371,8 +318,7 @@ export default function DoctorDashboardPage() {
                             onNavigate={(date) => setCurrentDate(date)}
                             eventPropGetter={eventStyleGetter}
                             onSelectEvent={handleSelectEvent}
-                            selectable
-                            onSelectSlot={handleSelectSlot}
+                            selectable={false}
                             slotPropGetter={slotPropGetter}
                             dayPropGetter={dayPropGetter}
                             min={new Date(1970, 0, 1, 8, 0, 0)}

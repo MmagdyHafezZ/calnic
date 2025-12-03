@@ -568,7 +568,15 @@ export default function SchedulePage() {
                             </Stack>
                         </Radio.Group>
                     </Paper>
-                    <Button variant="light" color="gray" onClick={() => setSelectedDoctor('')}>
+                    <Button
+                        variant="light"
+                        color="gray"
+                        onClick={() => {
+                            selectAppointment(null);
+                            setRescheduleTarget(null);
+                            localStorage.removeItem('bookingDetails');
+                        }}
+                    >
                         Clear selection
                     </Button>
 

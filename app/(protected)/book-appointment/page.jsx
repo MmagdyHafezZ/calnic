@@ -13,11 +13,15 @@ import {
     Button,
     Stack,
     Card,
-    Autocomplete
+    Autocomplete,
+    Tooltip,
+    ActionIcon,
+    ScrollArea
 } from '@mantine/core';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePatientsStore } from '../../../store';
+import { IconInfoCircle } from '@tabler/icons-react';
 
 export default function BookPage() {
     const [patientName, setPatientName] = useState('');
@@ -64,17 +68,25 @@ export default function BookPage() {
     }, [searchParams, getPatientById, selectPatient]);
 
     const isFormValid = patientName.trim() !== '' && appointmentType;
+    const appointmentOptions = [
+        { value: 'Walk-in', label: 'Walk-in', info: 'Quick visit for immediate needs', duration: '20 minutes' },
+        { value: 'Follow-up', label: 'Follow-up', info: 'Post-visit or results review', duration: '20 minutes' },
+        { value: 'Standard', label: 'Standard', info: 'General consultation', duration: '20 minutes' },
+        { value: 'Full Exam', label: 'Full Exam', info: 'Comprehensive exam', duration: '40 minutes' },
+        { value: 'Specialist', label: 'Specialist', info: 'Specialist consult', duration: '40 minutes' },
+        {
+            value: 'Custom',
+            label: 'Custom',
+            info: 'Custom duration set on calendar',
+            duration: 'Set manually on schedule'
+        }
+    ];
 
     return (
         <Box style={{ padding: '2rem', paddingTop: '3rem' }}>
             <Grid gutter="md">
                 <Grid.Col span={8}>
-                    <Card
-                        shadow="sm"
-                        padding="lg"
-                        withBorder
-                        style={{ maxWidth: '60vw', height: '80vh', margin: 'auto', marginTop: '2rem', marginLeft: 0 }}
-                    >
+                    <ScrollArea.Autosize style={{ height: '80vh', maxHeight: '80vh' }} type="always" offsetScrollbars>
                         <Text size="sm" c="dimmed">
                             Fields marked with <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span> are
                             required.
@@ -127,10 +139,30 @@ export default function BookPage() {
                                     onChange={setAppointmentType}
                                 >
                                     <Group mt="lg">
-                                        <Radio value="Walk-in" label="Walk-in" size="lg" />
-                                        <Radio value="Follow-up" label="Follow-up" size="lg" />
-                                        <Radio value="Standard" label="Standard" size="lg" />
-                                        <Radio value="Specialist" label="Specialist" size="lg" />
+                                        <Stack gap="sm">
+                                            {appointmentOptions.map((opt) => (
+                                                <Radio
+                                                    key={opt.value}
+                                                    value={opt.value}
+                                                    size="lg"
+                                                    styles={{ label: { width: '100%' } }}
+                                                    label={
+                                                        <Group gap={8}>
+                                                            <Text fw={600}>{opt.label}</Text>
+                                                            <Tooltip
+                                                                label={`${opt.info} • ${opt.duration}`}
+                                                                withArrow
+                                                                position="right"
+                                                            >
+                                                                <ActionIcon size="sm" variant="subtle" color="gray">
+                                                                    <IconInfoCircle size={16} />
+                                                                </ActionIcon>
+                                                            </Tooltip>
+                                                        </Group>
+                                                    }
+                                                />
+                                            ))}
+                                        </Stack>
                                     </Group>
                                 </Radio.Group>
 
@@ -149,7 +181,7 @@ export default function BookPage() {
                                 />
                             </Grid.Col>
                         </Grid>
-                    </Card>
+                    </ScrollArea.Autosize>
                 </Grid.Col>
                 <Grid.Col span={4}>
                     <Flex direction="column" mih="85vh" style={{ paddingTop: '2rem' }}>

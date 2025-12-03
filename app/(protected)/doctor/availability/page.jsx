@@ -1,7 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { AppShell, Box, Card, Stack, Text, Title, Button, TextInput, Alert, Group, Badge, Paper } from '@mantine/core';
+import {
+    AppShell,
+    Box,
+    Card,
+    Stack,
+    Text,
+    Title,
+    Button,
+    TextInput,
+    Alert,
+    Group,
+    Badge,
+    Paper,
+    ScrollArea
+} from '@mantine/core';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
@@ -118,8 +132,16 @@ export default function DoctorAvailabilityPage() {
         const last = dayjs(sorted[sorted.length - 1]);
         const firstWeekend = first.day() === 0 || first.day() === 6;
         const lastWeekend = last.day() === 0 || last.day() === 6;
-        const startDate = first.hour(firstWeekend ? 9 : 8).minute(0).second(0).millisecond(0);
-        const endDate = last.hour(lastWeekend ? 14 : 17).minute(0).second(0).millisecond(0);
+        const startDate = first
+            .hour(firstWeekend ? 9 : 8)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
+        const endDate = last
+            .hour(lastWeekend ? 14 : 17)
+            .minute(0)
+            .second(0)
+            .millisecond(0);
         setStart(startDate.format('YYYY-MM-DDTHH:mm'));
         setEnd(endDate.format('YYYY-MM-DDTHH:mm'));
         setPendingTimeOff({
@@ -250,8 +272,18 @@ export default function DoctorAvailabilityPage() {
             daysToBlock.forEach((dayStr) => {
                 const day = dayjs(dayStr);
                 const weekend = day.day() === 0 || day.day() === 6;
-                const startDate = day.hour(weekend ? 9 : 8).minute(0).second(0).millisecond(0).toDate();
-                const endDate = day.hour(weekend ? 14 : 17).minute(0).second(0).millisecond(0).toDate();
+                const startDate = day
+                    .hour(weekend ? 9 : 8)
+                    .minute(0)
+                    .second(0)
+                    .millisecond(0)
+                    .toDate();
+                const endDate = day
+                    .hour(weekend ? 14 : 17)
+                    .minute(0)
+                    .second(0)
+                    .millisecond(0)
+                    .toDate();
                 const overlaps = getAppointmentConflicts(startDate, endDate);
                 overlaps.forEach((c) => conflictIds.add(c.id));
                 const block = addDoctorTimeOff(doctor.id, doctor.name, startDate, endDate, reason || 'Unavailable');
@@ -453,34 +485,41 @@ export default function DoctorAvailabilityPage() {
                     <Card withBorder radius="md" shadow="sm">
                         <Stack gap="sm">
                             <Title order={4}>Unavailable blocks</Title>
-                            {doctorTimeOff.length === 0 && <Text c="dimmed">No time off added.</Text>}
-                            {doctorTimeOff.map((block) => (
-                                <Paper key={block.id} withBorder p="sm">
-                                    <Stack gap={2}>
-                                        <Text fw={600} size="sm">
-                                            {dayjs(block.start).format('MMM D, YYYY h:mm A')}
-                                        </Text>
-                                        <Text size="xs" c="dimmed">
-                                            to {dayjs(block.end).format('MMM D, YYYY h:mm A')}
-                                        </Text>
-                                        {block.reason && (
-                                            <Badge color="gray" variant="light" size="sm">
-                                                {block.reason}
-                                            </Badge>
-                                        )}
-                                        <Group justify="flex-end">
-                                            <Button
-                                                size="xs"
-                                                variant="light"
-                                                color="red"
-                                                onClick={() => deleteAppointment(block.id)}
-                                            >
-                                                Remove
-                                            </Button>
-                                        </Group>
+                            {doctorTimeOff.length === 0 ? (
+                                <Text c="dimmed">No time off added.</Text>
+                            ) : (
+                                <ScrollArea.Autosize mah={280} type="auto" scrollbarSize={8} scrollHideDelay={300}>
+                                    <Stack gap="sm" pt={4} pb={8}>
+                                        {doctorTimeOff.map((block) => (
+                                            <Paper key={block.id} withBorder p="sm">
+                                                <Stack gap={2}>
+                                                    <Text fw={600} size="sm">
+                                                        {dayjs(block.start).format('MMM D, YYYY h:mm A')}
+                                                    </Text>
+                                                    <Text size="xs" c="dimmed">
+                                                        to {dayjs(block.end).format('MMM D, YYYY h:mm A')}
+                                                    </Text>
+                                                    {block.reason && (
+                                                        <Badge color="gray" variant="light" size="sm">
+                                                            {block.reason}
+                                                        </Badge>
+                                                    )}
+                                                    <Group justify="flex-end">
+                                                        <Button
+                                                            size="xs"
+                                                            variant="light"
+                                                            color="red"
+                                                            onClick={() => deleteAppointment(block.id)}
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    </Group>
+                                                </Stack>
+                                            </Paper>
+                                        ))}
                                     </Stack>
-                                </Paper>
-                            ))}
+                                </ScrollArea.Autosize>
+                            )}
                         </Stack>
                     </Card>
                 </Box>

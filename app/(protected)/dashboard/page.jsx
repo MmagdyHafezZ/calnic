@@ -781,6 +781,15 @@ export default function DashboardPage() {
                                                 </Box>
                                             )}
 
+                                            {selectedAppointment.symptoms && (
+                                                <Box>
+                                                    <Text size="sm" c="dimmed" mb={4}>
+                                                        Symptoms
+                                                    </Text>
+                                                    <Text size="sm">{selectedAppointment.symptoms}</Text>
+                                                </Box>
+                                            )}
+
                                             {selectedAppointment.notes && (
                                                 <Box>
                                                     <Text size="sm" c="dimmed" mb={4}>

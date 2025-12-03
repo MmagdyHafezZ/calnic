@@ -2,13 +2,38 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Radio, Group, Box, Title, Button, Card, Stack, Alert, Text, Badge, SimpleGrid, Paper } from '@mantine/core';
+import {
+    Radio,
+    Group,
+    Box,
+    Title,
+    Button,
+    Card,
+    Stack,
+    Alert,
+    Text,
+    Badge,
+    SimpleGrid,
+    Paper,
+    Textarea,
+    ScrollArea
+} from '@mantine/core';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
 import { useAppointmentsStore, useDoctorsStore, useUIStore } from '../../../store';
 import { useSearchParams } from 'next/navigation';
+
+const APPOINTMENT_DURATION_BY_TYPE = {
+    'Walk-in': 20,
+    'Follow-up': 20,
+    Standard: 20,
+    'Full Exam': 40,
+    Specialist: 40
+};
+
+const getDurationForType = (type) => APPOINTMENT_DURATION_BY_TYPE[type] || null;
 
 export default function SchedulePage() {
     const router = useRouter();
@@ -18,8 +43,10 @@ export default function SchedulePage() {
     const [view, setView] = useState(Views.MONTH);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDoctor, setSelectedDoctor] = useState('');
+    const [appointmentType, setAppointmentType] = useState('Standard');
     const [bookingDetails, setBookingDetails] = useState(null);
-    const [duration, setDuration] = useState(20);
+    const [duration, setDuration] = useState(APPOINTMENT_DURATION_BY_TYPE.Standard);
+    const [manualSymptoms, setManualSymptoms] = useState('');
     const [cannotBookMessage, setCannotBookMessage] = useState('');
 
     const selectedAppointment = useAppointmentsStore((s) => s.selectedAppointment);
@@ -30,6 +57,10 @@ export default function SchedulePage() {
     const diagnosticRecommendation = useUIStore((s) => s.diagnosticRecommendation);
     const diagnosticAnswers = useUIStore((s) => s.diagnosticAnswers);
     const clearDiagnosticRecommendation = useUIStore((s) => s.clearDiagnosticRecommendation);
+    const shouldShowManualSymptoms = useMemo(() => {
+        const hasAnswers = diagnosticAnswers && Object.keys(diagnosticAnswers || {}).length > 0;
+        return !diagnosticRecommendation && !hasAnswers;
+    }, [diagnosticAnswers, diagnosticRecommendation]);
 
     const selectedDoctorObj = useMemo(() => doctors.find((d) => d.name === selectedDoctor), [doctors, selectedDoctor]);
 
@@ -37,13 +68,31 @@ export default function SchedulePage() {
         try {
             const saved = JSON.parse(localStorage.getItem('bookingDetails') || 'null');
             setBookingDetails(saved);
-            if (saved?.duration && Number.isFinite(saved.duration)) {
-                setDuration(saved.duration);
+            if (saved) {
+                const type = saved.appointmentType || saved.type || 'Standard';
+                setAppointmentType(type);
+                const mapped = getDurationForType(type);
+                if (saved.symptoms) {
+                    setManualSymptoms(saved.symptoms);
+                }
+                if (mapped) {
+                    setDuration(mapped);
+                } else if (saved?.duration && Number.isFinite(saved.duration)) {
+                    setDuration(saved.duration);
+                } else {
+                    setDuration((prev) => prev || APPOINTMENT_DURATION_BY_TYPE.Standard);
+                }
             }
         } catch (e) {
             console.error('Failed to load booking details', e);
         }
     }, []);
+
+    useEffect(() => {
+        if (!shouldShowManualSymptoms) {
+            setManualSymptoms('');
+        }
+    }, [shouldShowManualSymptoms]);
 
     useEffect(() => {
         if (diagnosticRecommendation?.doctorName) {
@@ -131,12 +180,24 @@ export default function SchedulePage() {
     };
 
     useEffect(() => {
-        if (rescheduleTarget?.doctorName) {
+        if (!rescheduleTarget) return;
+        if (rescheduleTarget.doctorName) {
             setSelectedDoctor(rescheduleTarget.doctorName);
         }
-        if (rescheduleTarget?.start && rescheduleTarget?.end) {
+        const resType = rescheduleTarget.appointmentType || rescheduleTarget.type;
+        const mapped = getDurationForType(resType);
+        if (resType) {
+            setAppointmentType(resType);
+        }
+        if (rescheduleTarget.start && rescheduleTarget.end) {
             const minutes = Math.max(5, dayjs(rescheduleTarget.end).diff(dayjs(rescheduleTarget.start), 'minute'));
-            setDuration(minutes);
+            if (mapped) {
+                setDuration(mapped);
+            } else {
+                setDuration(minutes);
+            }
+        } else if (mapped) {
+            setDuration(mapped);
         }
     }, [rescheduleTarget]);
     const events = useMemo(() => {
@@ -176,19 +237,31 @@ export default function SchedulePage() {
             }
 
             const startDate = start instanceof Date ? start : new Date(start);
-            const resolvedEnd = endOverride
+            const endOverrideDate = endOverride
                 ? endOverride instanceof Date
                     ? endOverride
                     : new Date(endOverride)
-                : dayjs(startDate).add(duration, 'minute').toDate();
-            const diffMinutes = dayjs(resolvedEnd).diff(dayjs(startDate), 'minute');
-            const effectiveDuration = Number.isFinite(diffMinutes) ? Math.max(5, diffMinutes) : duration || 20;
-            const endDate = Number.isFinite(diffMinutes)
-                ? resolvedEnd
-                : dayjs(startDate).add(effectiveDuration, 'minute').toDate();
-            if (endOverride && Number.isFinite(diffMinutes) && effectiveDuration !== duration) {
-                setDuration(effectiveDuration);
+                : null;
+            const activeType = appointmentType || booking.appointmentType || booking.type || 'Standard';
+            const mappedDuration = activeType === 'Custom' ? null : getDurationForType(activeType);
+            let effectiveDuration = duration || APPOINTMENT_DURATION_BY_TYPE.Standard;
+
+            if (mappedDuration) {
+                effectiveDuration = mappedDuration;
+                if (duration !== mappedDuration) {
+                    setDuration(mappedDuration);
+                }
+            } else if (endOverrideDate) {
+                const diffMinutes = dayjs(endOverrideDate).diff(dayjs(startDate), 'minute');
+                if (Number.isFinite(diffMinutes) && diffMinutes > 0) {
+                    effectiveDuration = Math.max(5, diffMinutes);
+                    if (duration !== effectiveDuration) {
+                        setDuration(effectiveDuration);
+                    }
+                }
             }
+
+            const endDate = dayjs(startDate).add(effectiveDuration, 'minute').toDate();
 
             if (dayjs(startDate).isBefore(dayjs())) {
                 setCannotBookMessage('Cannot book a time that has already passed.');
@@ -207,7 +280,7 @@ export default function SchedulePage() {
 
             const pending = {
                 patientName: booking.patientName || 'Patient',
-                appointmentType: booking.appointmentType || booking.type || 'Booked',
+                appointmentType: activeType || booking.appointmentType || booking.type || 'Booked',
                 duration: effectiveDuration,
                 start: startDate,
                 end: endDate,
@@ -215,6 +288,7 @@ export default function SchedulePage() {
                 doctorId: selectedDoctorObj?.id || booking.doctorId,
                 notes: booking.notes || '',
                 medicalHistory: booking.medicalHistory || '',
+                symptoms: manualSymptoms || booking.symptoms || '',
                 diagnosticAnswers: diagnosticAnswers || {},
                 diagnosticReason: diagnosticRecommendation?.reason || '',
                 originalAppointmentId: rescheduleTarget?.id || null
@@ -226,7 +300,18 @@ export default function SchedulePage() {
                 setCannotBookMessage('Failed to prepare booking. Please try again.');
             }
         },
-        [bookingDetails, hasConflict, selectedDoctor, duration, rescheduleTarget, selectedDoctorObj, diagnosticAnswers, diagnosticRecommendation?.reason]
+        [
+            bookingDetails,
+            hasConflict,
+            selectedDoctor,
+            duration,
+            rescheduleTarget,
+            selectedDoctorObj,
+            diagnosticAnswers,
+            diagnosticRecommendation?.reason,
+            appointmentType,
+            manualSymptoms
+        ]
     );
 
     const handleSelectSlot = useCallback(
@@ -258,11 +343,13 @@ export default function SchedulePage() {
         const startHour = isWeekend ? 9 : 8;
         const endHour = isWeekend ? 14 : 17;
         const slots = [];
+        const mappedDuration = appointmentType === 'Custom' ? null : getDurationForType(appointmentType);
+        const effectiveDuration = mappedDuration || duration;
 
         for (let h = startHour; h < endHour; h++) {
             for (const m of [0, 20, 40]) {
                 const start = base.hour(h).minute(m).toDate();
-                const end = dayjs(start).add(duration, 'minute').toDate();
+                const end = dayjs(start).add(effectiveDuration, 'minute').toDate();
                 if (!isSlotWithinHours(start, end)) continue;
                 if (dayjs(start).isBefore(dayjs())) continue;
                 if (hasConflict(start, end)) continue;
@@ -270,10 +357,27 @@ export default function SchedulePage() {
             }
         }
         return slots;
-    }, [selectedDoctor, currentDate, duration, hasConflict]);
+    }, [selectedDoctor, currentDate, duration, hasConflict, appointmentType]);
+
+    const getPreviewDuration = useCallback(
+        (range) => {
+            const start = range.start || range;
+            const mapped = appointmentType === 'Custom' ? null : getDurationForType(appointmentType);
+            if (mapped) return mapped;
+            if (range.end) {
+                const diff = dayjs(range.end).diff(dayjs(start), 'minute');
+                if (Number.isFinite(diff) && diff > 0) {
+                    return diff;
+                }
+            }
+            return duration;
+        },
+        [appointmentType, duration]
+    );
 
     const slotPropGetter = (date) => {
-        const end = dayjs(date).add(duration, 'minute').toDate();
+        const previewDuration = getPreviewDuration({ start: date });
+        const end = dayjs(date).add(previewDuration, 'minute').toDate();
         const isWeekend = dayjs(date).day() === 0 || dayjs(date).day() === 6;
         const allowed = selectedDoctor && isSlotWithinHours(date, end) && !hasConflict(date, end);
         if (!allowed) {
@@ -289,7 +393,8 @@ export default function SchedulePage() {
 
     const handleOnSelecting = (range) => {
         const start = range.start || range;
-        const tentativeEnd = range.end || dayjs(start).add(duration, 'minute').toDate();
+        const effectiveDuration = getPreviewDuration(range);
+        const tentativeEnd = dayjs(start).add(effectiveDuration, 'minute').toDate();
         return selectedDoctor && isSlotWithinHours(start, tentativeEnd) && !hasConflict(start, tentativeEnd);
     };
 
@@ -335,7 +440,7 @@ export default function SchedulePage() {
 
     return (
         <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
-            <Card
+            <ScrollArea.Autosize
                 shadow="sm"
                 padding="lg"
                 withBorder
@@ -427,8 +532,26 @@ export default function SchedulePage() {
                             </Text>
                         )}
                     </Paper>
+
+                    {shouldShowManualSymptoms && (
+                        <Paper withBorder radius="md" p="md">
+                            <Title order={5} mb="xs">
+                                Symptoms (optional)
+                            </Title>
+                            <Text size="sm" c="dimmed" mb="xs">
+                                Provide symptoms here when you skip the diagnostic questionnaire.
+                            </Text>
+                            <Textarea
+                                placeholder="Add symptoms..."
+                                minRows={3}
+                                autosize
+                                value={manualSymptoms}
+                                onChange={(e) => setManualSymptoms(e.target.value)}
+                            />
+                        </Paper>
+                    )}
                 </Stack>
-            </Card>
+            </ScrollArea.Autosize>
 
             <Box style={{ width: '72%', display: 'flex', flexDirection: 'column' }}>
                 <Box

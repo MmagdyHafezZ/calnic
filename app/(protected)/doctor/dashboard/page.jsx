@@ -263,6 +263,17 @@ export default function DoctorDashboardPage() {
                 {apt.reason && <Text size="sm">Reason: {apt.reason}</Text>}
                 {patient?.email && <Text size="sm">Email: {patient.email}</Text>}
                 {patient?.phone && <Text size="sm">Phone: {patient.phone}</Text>}
+                {apt.symptoms && (
+                    <>
+                        <Divider my="xs" />
+                        <Text size="sm" fw={600}>
+                            Symptoms
+                        </Text>
+                        <Text size="sm" c="dimmed">
+                            {apt.symptoms}
+                        </Text>
+                    </>
+                )}
                 {apt.notes && (
                     <>
                         <Divider my="xs" />

@@ -39,6 +39,7 @@ export default function ConfirmAppointment() {
             type: pending.appointmentType || pending.type || 'Booked',
             notes: pending.notes || '',
             medicalHistory: pending.medicalHistory || '',
+            symptoms: pending.symptoms || '',
             diagnosticAnswers: pending.diagnosticAnswers || {},
             diagnosticReason: pending.diagnosticReason || '',
             needsReschedule: false,

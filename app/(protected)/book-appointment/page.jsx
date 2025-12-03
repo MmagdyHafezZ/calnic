@@ -94,11 +94,14 @@ export default function BookPage() {
     ];
 
     return (
-        <Box style={{ padding: '1.5rem', paddingTop: '2rem' }}>
+        <Box style={{ padding: '1.5rem', paddingTop: '5rem' }}>
             <Grid gutter="md">
                 <Grid.Col span={{ base: 12, lg: 8 }}>
                     <ScrollArea.Autosize
-                        style={{ height: isNarrow ? 'auto' : '80vh', maxHeight: isNarrow ? 'unset' : '80vh' }}
+                        style={{
+                            height: isNarrow ? 'auto' : '80vh',
+                            maxHeight: isNarrow ? 'unset' : '80vh'
+                        }}
                         type="always"
                         offsetScrollbars
                     >
@@ -204,7 +207,7 @@ export default function BookPage() {
                     <Flex
                         direction="column"
                         mih={isNarrow ? 'auto' : '85vh'}
-                        style={{ paddingTop: '2rem', gap: '1rem' }}
+                        style={{ paddingTop: '5rem', gap: '1rem' }}
                     >
                         <Box style={{ flexGrow: 1 }}>
                             <Title order={3}>Relevant Medical History:</Title>

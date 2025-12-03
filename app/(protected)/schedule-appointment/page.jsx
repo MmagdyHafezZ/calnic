@@ -2,28 +2,11 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-    Radio,
-    Group,
-    ActionIcon,
-    Box,
-    Title,
-    Button,
-    Card,
-    Stack,
-    Alert,
-    Flex,
-    Text,
-    Badge,
-    SimpleGrid,
-    Paper,
-    TextInput
-} from '@mantine/core';
+import { Radio, Group, Box, Title, Button, Card, Stack, Alert, Text, Badge, SimpleGrid, Paper } from '@mantine/core';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useAppointmentsStore, useDoctorsStore, useUIStore } from '../../../store';
 import { useSearchParams } from 'next/navigation';
 
@@ -37,15 +20,15 @@ export default function SchedulePage() {
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const [bookingDetails, setBookingDetails] = useState(null);
     const [duration, setDuration] = useState(20);
-    const [customDuration, setCustomDuration] = useState('20');
     const [cannotBookMessage, setCannotBookMessage] = useState('');
 
     const selectedAppointment = useAppointmentsStore((s) => s.selectedAppointment);
     const selectAppointment = useAppointmentsStore((s) => s.selectAppointment);
     const confirmedAppointments = useAppointmentsStore((s) => s.appointments) || [];
 
-    const doctors = useDoctorsStore((s) => s.doctors);
+    const doctors = useDoctorsStore((s) => s.doctors) || [];
     const diagnosticRecommendation = useUIStore((s) => s.diagnosticRecommendation);
+    const diagnosticAnswers = useUIStore((s) => s.diagnosticAnswers);
     const clearDiagnosticRecommendation = useUIStore((s) => s.clearDiagnosticRecommendation);
 
     const selectedDoctorObj = useMemo(() => doctors.find((d) => d.name === selectedDoctor), [doctors, selectedDoctor]);
@@ -56,7 +39,6 @@ export default function SchedulePage() {
             setBookingDetails(saved);
             if (saved?.duration && Number.isFinite(saved.duration)) {
                 setDuration(saved.duration);
-                setCustomDuration(String(saved.duration));
             }
         } catch (e) {
             console.error('Failed to load booking details', e);
@@ -155,7 +137,6 @@ export default function SchedulePage() {
         if (rescheduleTarget?.start && rescheduleTarget?.end) {
             const minutes = Math.max(5, dayjs(rescheduleTarget.end).diff(dayjs(rescheduleTarget.start), 'minute'));
             setDuration(minutes);
-            setCustomDuration(String(minutes));
         }
     }, [rescheduleTarget]);
     const events = useMemo(() => {
@@ -181,17 +162,8 @@ export default function SchedulePage() {
         };
     };
 
-    const handleNavigate = (direction) => {
-        const increment = view === Views.DAY ? 'day' : view === Views.WEEK ? 'week' : 'month';
-        const candidate =
-            direction === 'NEXT' ? dayjs(currentDate).add(1, increment) : dayjs(currentDate).subtract(1, increment);
-        const today = dayjs().startOf('day');
-        const newDate = candidate.isBefore(today) ? today.toDate() : candidate.toDate();
-        setCurrentDate(newDate);
-    };
-
     const createPendingBooking = useCallback(
-        (start) => {
+        (start, endOverride) => {
             setCannotBookMessage('');
             const booking = rescheduleTarget || bookingDetails;
             if (!booking) {
@@ -204,7 +176,19 @@ export default function SchedulePage() {
             }
 
             const startDate = start instanceof Date ? start : new Date(start);
-            const endDate = dayjs(startDate).add(duration, 'minute').toDate();
+            const resolvedEnd = endOverride
+                ? endOverride instanceof Date
+                    ? endOverride
+                    : new Date(endOverride)
+                : dayjs(startDate).add(duration, 'minute').toDate();
+            const diffMinutes = dayjs(resolvedEnd).diff(dayjs(startDate), 'minute');
+            const effectiveDuration = Number.isFinite(diffMinutes) ? Math.max(5, diffMinutes) : duration || 20;
+            const endDate = Number.isFinite(diffMinutes)
+                ? resolvedEnd
+                : dayjs(startDate).add(effectiveDuration, 'minute').toDate();
+            if (endOverride && Number.isFinite(diffMinutes) && effectiveDuration !== duration) {
+                setDuration(effectiveDuration);
+            }
 
             if (dayjs(startDate).isBefore(dayjs())) {
                 setCannotBookMessage('Cannot book a time that has already passed.');
@@ -224,12 +208,15 @@ export default function SchedulePage() {
             const pending = {
                 patientName: booking.patientName || 'Patient',
                 appointmentType: booking.appointmentType || booking.type || 'Booked',
-                duration,
+                duration: effectiveDuration,
                 start: startDate,
                 end: endDate,
                 doctorName: selectedDoctor || booking.doctorName,
                 doctorId: selectedDoctorObj?.id || booking.doctorId,
                 notes: booking.notes || '',
+                medicalHistory: booking.medicalHistory || '',
+                diagnosticAnswers: diagnosticAnswers || {},
+                diagnosticReason: diagnosticRecommendation?.reason || '',
                 originalAppointmentId: rescheduleTarget?.id || null
             };
             try {
@@ -239,7 +226,7 @@ export default function SchedulePage() {
                 setCannotBookMessage('Failed to prepare booking. Please try again.');
             }
         },
-        [bookingDetails, hasConflict, selectedDoctor, duration, rescheduleTarget, selectedDoctorObj]
+        [bookingDetails, hasConflict, selectedDoctor, duration, rescheduleTarget, selectedDoctorObj, diagnosticAnswers, diagnosticRecommendation?.reason]
     );
 
     const handleSelectSlot = useCallback(
@@ -256,7 +243,7 @@ export default function SchedulePage() {
             }
 
             if (view === Views.DAY) {
-                createPendingBooking(slotInfo.start);
+                createPendingBooking(slotInfo.start, slotInfo.end);
             }
         },
         [selectedDoctor, view, createPendingBooking]
@@ -302,8 +289,8 @@ export default function SchedulePage() {
 
     const handleOnSelecting = (range) => {
         const start = range.start || range;
-        const end = dayjs(start).add(duration, 'minute').toDate();
-        return selectedDoctor && isSlotWithinHours(start, end) && !hasConflict(start, end);
+        const tentativeEnd = range.end || dayjs(start).add(duration, 'minute').toDate();
+        return selectedDoctor && isSlotWithinHours(start, tentativeEnd) && !hasConflict(start, tentativeEnd);
     };
 
     const dayPropGetter = (date) => {
@@ -332,7 +319,7 @@ export default function SchedulePage() {
     const handleQuickSelect = (slot) => {
         setView(Views.DAY);
         setCurrentDate(slot.start);
-        createPendingBooking(slot.start);
+        createPendingBooking(slot.start, slot.end);
     };
 
     const doctorLabel = (doc) => (
@@ -344,12 +331,17 @@ export default function SchedulePage() {
         </Group>
     );
 
-    const selectedDoctorValue = selectedDoctor ?? '';
+    const selectedDoctorValue = typeof selectedDoctor === 'string' ? selectedDoctor : '';
 
     return (
         <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
-            <Card shadow="sm" padding="lg" withBorder style={{ width: '28%', minWidth: '260px', height: '80vh' }}>
-                <Stack gap="lg" style={{ height: '100%' }}>
+            <Card
+                shadow="sm"
+                padding="lg"
+                withBorder
+                style={{ width: '28%', minWidth: '260px', height: '80vh', display: 'flex' }}
+            >
+                <Stack gap="lg" style={{ flex: 1, overflowY: 'auto' }}>
                     <Title order={3}>Select Doctor</Title>
 
                     {diagnosticRecommendation && (
@@ -387,7 +379,6 @@ export default function SchedulePage() {
                     <Radio.Group
                         name="appointment-doctor"
                         value={selectedDoctorValue}
-                        defaultValue=""
                         onChange={(value) => setSelectedDoctor(value || '')}
                     >
                         <Stack gap="sm">
@@ -406,46 +397,6 @@ export default function SchedulePage() {
                     <Button variant="light" color="gray" onClick={() => setSelectedDoctor('')}>
                         Clear selection
                     </Button>
-
-                    <Paper withBorder radius="md" p="md">
-                        <Title order={4} mb="xs">
-                            Appointment Duration
-                        </Title>
-                        <Button.Group mb="sm">
-                            {[20, 40, 60].map((m) => (
-                                <Button
-                                    key={m}
-                                    size="xs"
-                                    variant={duration === m ? 'filled' : 'light'}
-                                    onClick={() => {
-                                        setDuration(m);
-                                        setCustomDuration(String(m));
-                                    }}
-                                >
-                                    {m} min
-                                </Button>
-                            ))}
-                        </Button.Group>
-                        <TextInput
-                            label="Custom minutes"
-                            type="number"
-                            min={5}
-                            value={customDuration}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setCustomDuration(val);
-                                const parsed = parseInt(val, 10);
-                                if (!Number.isNaN(parsed) && parsed > 0) {
-                                    setDuration(parsed);
-                                }
-                            }}
-                            placeholder="e.g. 30"
-                            size="xs"
-                        />
-                        <Text size="xs" c="dimmed" mt={6}>
-                            Used for availability and booking length.
-                        </Text>
-                    </Paper>
 
                     <Paper withBorder radius="md" p="md" style={{ flex: 1, overflow: 'auto' }}>
                         <Title order={4} mb="xs">
@@ -480,47 +431,6 @@ export default function SchedulePage() {
             </Card>
 
             <Box style={{ width: '72%', display: 'flex', flexDirection: 'column' }}>
-                <Flex align="center" mb="md" style={{ width: '100%' }}>
-                    <Button.Group>
-                        <Button
-                            variant={view === Views.DAY ? 'filled' : 'light'}
-                            onClick={() => setView(Views.DAY)}
-                            size="sm"
-                        >
-                            Day
-                        </Button>
-                        <Button
-                            variant={view === Views.WEEK ? 'filled' : 'light'}
-                            onClick={() => setView(Views.WEEK)}
-                            size="sm"
-                        >
-                            Week
-                        </Button>
-                        <Button
-                            variant={view === Views.MONTH ? 'filled' : 'light'}
-                            onClick={() => setView(Views.MONTH)}
-                            size="sm"
-                        >
-                            Month
-                        </Button>
-                    </Button.Group>
-
-                    <Box style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                        <Group gap="xs">
-                            <ActionIcon variant="subtle" size="lg" onClick={() => handleNavigate('PREV')}>
-                                <IconChevronLeft size={24} />
-                            </ActionIcon>
-
-                            <Title order={2}>{getHeaderText()}</Title>
-
-                            <ActionIcon variant="subtle" size="lg" onClick={() => handleNavigate('NEXT')}>
-                                <IconChevronRight size={24} />
-                            </ActionIcon>
-                        </Group>
-                    </Box>
-                    <Box style={{ width: '120px' }} />
-                </Flex>
-
                 <Box
                     style={{
                         height: '70vh',
@@ -548,7 +458,6 @@ export default function SchedulePage() {
                         timeslots={3}
                         onSelectSlot={handleSelectSlot}
                         views={[Views.MONTH, Views.WEEK, Views.DAY]}
-                        toolbar={false}
                         dayPropGetter={dayPropGetter}
                         min={new Date(1970, 0, 1, 8, 0, 0)}
                         max={new Date(1970, 0, 1, 17, 0, 0)}
@@ -558,7 +467,8 @@ export default function SchedulePage() {
                             style={{
                                 position: 'absolute',
                                 inset: 0,
-                                backgroundColor: 'rgba(200,200,200,0.5)',
+                                backgroundColor: 'rgba(245,245,245,0.9)',
+                                backdropFilter: 'blur(2px)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

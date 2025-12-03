@@ -26,6 +26,7 @@ const useUIStore = create(
                 theme: 'light',
 
                 diagnosticRecommendation: null,
+                diagnosticAnswers: {},
                 diagnosticRanking: [],
 
                 setCalendarView: (view) => {
@@ -166,12 +167,20 @@ const useUIStore = create(
                     set({ diagnosticRecommendation: recommendation }, false, 'ui/setDiagnosticRecommendation');
                 },
 
+                setDiagnosticAnswers: (answers) => {
+                    set({ diagnosticAnswers: answers || {} }, false, 'ui/setDiagnosticAnswers');
+                },
+
                 setDiagnosticRanking: (ranking) => {
                     set({ diagnosticRanking: ranking }, false, 'ui/setDiagnosticRanking');
                 },
 
                 clearDiagnosticRecommendation: () => {
-                    set({ diagnosticRecommendation: null, diagnosticRanking: [] }, false, 'ui/clearDiagnosticRecommendation');
+                    set(
+                        { diagnosticRecommendation: null, diagnosticRanking: [], diagnosticAnswers: {} },
+                        false,
+                        'ui/clearDiagnosticRecommendation'
+                    );
                 },
 
                 resetUI: () => {
@@ -188,6 +197,7 @@ const useUIStore = create(
                             isSidebarCollapsed: false,
                             diagnosticRecommendation: null,
                             diagnosticRanking: [],
+                            diagnosticAnswers: {},
                         },
                         false,
                         'ui/resetUI'

@@ -36,6 +36,7 @@ import {
     IconX
 } from '@tabler/icons-react';
 import { useAuthStore, useAppointmentsStore, useDoctorsStore, usePatientsStore, useUIStore } from '../../../store';
+import { diagnosticQuestions } from '../../../data/diagnostic-questions';
 import BookingModal from '../../../components/BookingModal';
 
 const localizer = dayjsLocalizer(dayjs);
@@ -79,6 +80,16 @@ export default function DashboardPage() {
         }
     }, [isAuthenticated, router]);
 
+    const flatDiagnosticQuestions = useMemo(() => {
+        return diagnosticQuestions.flatMap((section) =>
+            section.questions.map((q) => ({
+                id: q.id,
+                prompt: q.prompt,
+                options: q.options || []
+            }))
+        );
+    }, []);
+
     // Initialize currentDate on client side to avoid hydration mismatch
     useEffect(() => {
         if (!currentDate) {
@@ -106,6 +117,25 @@ export default function DashboardPage() {
         closeAppointmentDetailsModal();
         clearSelectedAppointment();
     };
+
+    const diagnosticSummary = useMemo(() => {
+        const answers = selectedAppointment?.diagnosticAnswers;
+        if (!answers) return [];
+        return flatDiagnosticQuestions
+            .filter((q) => answers[q.id])
+            .map((q) => {
+                const ans = answers[q.id];
+                const option = q.options.find((o) => o.value === ans?.value);
+                const baseLabel = ans?.value === 'other' ? 'Other' : option?.label || ans?.value || '—';
+                const answerText =
+                    ans?.value === 'other'
+                        ? ans?.otherText
+                            ? `${option?.label ? `${option.label} — ` : ''}${ans.otherText}`
+                            : option?.label || 'Other'
+                        : baseLabel;
+                return { id: q.id, prompt: q.prompt, answer: answerText || '—' };
+            });
+    }, [selectedAppointment?.diagnosticAnswers, flatDiagnosticQuestions]);
 
     const eventStyleGetter = (event) => {
         let backgroundColor = '#e5e7eb'; // default gray
@@ -360,10 +390,7 @@ export default function DashboardPage() {
             .filter(Boolean);
     };
 
-    const rescheduleAppointments = useMemo(
-        () => appointments.filter((apt) => apt.needsReschedule),
-        [appointments]
-    );
+    const rescheduleAppointments = useMemo(() => appointments.filter((apt) => apt.needsReschedule), [appointments]);
 
     const goToReschedule = (apt) => {
         if (apt.start) {
@@ -451,7 +478,8 @@ export default function DashboardPage() {
                                                         )}
                                                     </Group>
                                                     <Text size="xs" c="dimmed">
-                                                        {dayjs(apt.start).format('MMM D, h:mm A')} - {dayjs(apt.end).format('h:mm A')}
+                                                        {dayjs(apt.start).format('MMM D, h:mm A')} -{' '}
+                                                        {dayjs(apt.end).format('h:mm A')}
                                                     </Text>
                                                     {apt.rescheduleNote && (
                                                         <Text size="xs" c="red.8">
@@ -459,7 +487,11 @@ export default function DashboardPage() {
                                                         </Text>
                                                     )}
                                                     <Group gap="xs" mt={4}>
-                                                        <Button size="xs" color="red" onClick={() => goToReschedule(apt)}>
+                                                        <Button
+                                                            size="xs"
+                                                            color="red"
+                                                            onClick={() => goToReschedule(apt)}
+                                                        >
                                                             Reschedule
                                                         </Button>
                                                         <Button
@@ -531,49 +563,6 @@ export default function DashboardPage() {
                     <Box
                         style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}
                     >
-                        <Group justify="center" mb="md" gap="xl">
-                            <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('PREV')}>
-                                <IconChevronLeft size={24} />
-                            </ActionIcon>
-                            <Title order={2}>{getCalendarTitle()}</Title>
-                            <ActionIcon variant="subtle" size="lg" onClick={() => navigateCalendar('NEXT')}>
-                                <IconChevronRight size={24} />
-                            </ActionIcon>
-                        </Group>
-
-                        <Group justify="center" mb="md">
-                            <Button.Group>
-                                <Button
-                                    variant={calendarView === 'day' ? 'filled' : 'light'}
-                                    onClick={() => setCalendarView('day')}
-                                    size="sm"
-                                >
-                                    Day
-                                </Button>
-                                <Button
-                                    variant={calendarView === 'week' ? 'filled' : 'light'}
-                                    onClick={() => setCalendarView('week')}
-                                    size="sm"
-                                >
-                                    Week
-                                </Button>
-                                <Button
-                                    variant={calendarView === 'month' ? 'filled' : 'light'}
-                                    onClick={() => setCalendarView('month')}
-                                    size="sm"
-                                >
-                                    Month
-                                </Button>
-                                <Button
-                                    variant={calendarView === 'agenda' ? 'filled' : 'light'}
-                                    onClick={() => setCalendarView('agenda')}
-                                    size="sm"
-                                >
-                                    Year
-                                </Button>
-                            </Button.Group>
-                        </Group>
-
                         <Box
                             style={{
                                 flex: 1,
@@ -603,7 +592,6 @@ export default function DashboardPage() {
                                 onNavigate={(date) => setCurrentDate(date)}
                                 eventPropGetter={eventStyleGetter}
                                 onSelectEvent={handleSelectEvent}
-                                toolbar={false}
                                 slotPropGetter={slotPropGetter}
                                 dayPropGetter={dayPropGetter}
                                 min={new Date(1970, 0, 1, 8, 0, 0)}
@@ -734,6 +722,53 @@ export default function DashboardPage() {
                                                     <Badge size="lg" variant="light">
                                                         {selectedAppointment.type}
                                                     </Badge>
+                                                </Box>
+                                            )}
+
+                                            {selectedAppointment.medicalHistory && (
+                                                <Box>
+                                                    <Text size="sm" c="dimmed" mb={4}>
+                                                        Medical History
+                                                    </Text>
+                                                    <Text size="sm">{selectedAppointment.medicalHistory}</Text>
+                                                </Box>
+                                            )}
+
+                                            {selectedAppointment.notes && (
+                                                <Box>
+                                                    <Text size="sm" c="dimmed" mb={4}>
+                                                        Notes
+                                                    </Text>
+                                                    <Text size="sm">{selectedAppointment.notes}</Text>
+                                                </Box>
+                                            )}
+
+                                            {selectedAppointment.diagnosticReason && (
+                                                <Box>
+                                                    <Text size="sm" c="dimmed" mb={4}>
+                                                        Diagnostic Reason
+                                                    </Text>
+                                                    <Text size="sm">{selectedAppointment.diagnosticReason}</Text>
+                                                </Box>
+                                            )}
+
+                                            {diagnosticSummary.length > 0 && (
+                                                <Box>
+                                                    <Text size="sm" c="dimmed" mb={4}>
+                                                        Diagnostic Answers
+                                                    </Text>
+                                                    <Stack gap="xs">
+                                                        {diagnosticSummary.map((item) => (
+                                                            <Box key={item.id}>
+                                                                <Text size="sm" fw={600}>
+                                                                    {item.prompt}
+                                                                </Text>
+                                                                <Text size="sm" c="dimmed">
+                                                                    {item.answer}
+                                                                </Text>
+                                                            </Box>
+                                                        ))}
+                                                    </Stack>
                                                 </Box>
                                             )}
                                         </>

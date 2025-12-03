@@ -22,6 +22,7 @@ import {
 } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useAppointmentsStore, useDoctorsStore, usePatientsStore, useAuthStore } from '../../../../store';
+import { diagnosticQuestions } from '../../../../data/diagnostic-questions';
 
 const localizer = dayjsLocalizer(dayjs);
 
@@ -41,6 +42,16 @@ export default function DoctorDashboardPage() {
         if (!user) return null;
         return doctors.find((d) => d.id === user.doctorId || d.name === user.name);
     }, [user, doctors]);
+
+    const flatDiagnosticQuestions = useMemo(() => {
+        return diagnosticQuestions.flatMap((section) =>
+            section.questions.map((q) => ({
+                id: q.id,
+                prompt: q.prompt,
+                options: q.options || []
+            }))
+        );
+    }, []);
 
     useEffect(() => {
         if (!isAuthenticated || !user || user.role !== 'doctor') {
@@ -165,6 +176,22 @@ export default function DoctorDashboardPage() {
     const renderAppointmentDetails = (apt) => {
         if (!apt) return null;
         const patient = getPatientDetails(apt.patientName);
+        const diagSummary =
+            apt.diagnosticAnswers &&
+            flatDiagnosticQuestions
+                .filter((q) => apt.diagnosticAnswers[q.id])
+                .map((q) => {
+                    const ans = apt.diagnosticAnswers[q.id];
+                    const option = q.options.find((o) => o.value === ans?.value);
+                    const baseLabel = ans?.value === 'other' ? 'Other' : option?.label || ans?.value || '—';
+                    const answerText =
+                        ans?.value === 'other'
+                            ? ans?.otherText
+                                ? `${option?.label ? `${option.label} — ` : ''}${ans.otherText}`
+                                : option?.label || 'Other'
+                            : baseLabel;
+                    return { id: q.id, prompt: q.prompt, answer: answerText || '—' };
+                });
         return (
             <Stack gap="xs">
                 <Title order={4}>{apt.patientName}</Title>
@@ -183,6 +210,37 @@ export default function DoctorDashboardPage() {
                     <>
                         <Divider my="xs" />
                         <Text size="sm">{apt.notes}</Text>
+                    </>
+                )}
+                {apt.diagnosticReason && (
+                    <>
+                        <Divider my="xs" />
+                        <Text size="sm" fw={600}>
+                            Diagnostic Reason
+                        </Text>
+                        <Text size="sm" c="dimmed">
+                            {apt.diagnosticReason}
+                        </Text>
+                    </>
+                )}
+                {diagSummary && diagSummary.length > 0 && (
+                    <>
+                        <Divider my="xs" />
+                        <Text size="sm" fw={600}>
+                            Diagnostic Answers
+                        </Text>
+                        <Stack gap="xs">
+                            {diagSummary.map((item) => (
+                                <Box key={item.id}>
+                                    <Text size="sm" fw={600}>
+                                        {item.prompt}
+                                    </Text>
+                                    <Text size="sm" c="dimmed">
+                                        {item.answer}
+                                    </Text>
+                                </Box>
+                            ))}
+                        </Stack>
                     </>
                 )}
             </Stack>
@@ -216,62 +274,6 @@ export default function DoctorDashboardPage() {
                 </Box>
 
                 <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-                    <Group justify="center" mb="md" gap="md" style={{ position: 'relative' }}>
-                        <Button
-                            variant="subtle"
-                            onClick={() => setCurrentDate(dayjs(currentDate).subtract(1, 'day').toDate())}
-                        >
-                            <IconChevronLeft size={16} />
-                        </Button>
-                        <Title order={3} style={{ minWidth: 240, textAlign: 'center' }}>
-                            {dayjs(currentDate).format(view === Views.DAY ? 'MMMM D, YYYY' : 'MMMM YYYY')}
-                        </Title>
-                        <Button
-                            variant="subtle"
-                            onClick={() => setCurrentDate(dayjs(currentDate).add(1, 'day').toDate())}
-                        >
-                            <IconChevronRight size={16} />
-                        </Button>
-                    </Group>
-                    <Group justify="center" mb="md">
-                        <Button.Group>
-                            <Button variant="light" onClick={() => setCurrentDate(new Date())}>
-                                Today
-                            </Button>
-                            <Button
-                                variant={view === Views.DAY ? 'filled' : 'light'}
-                                onClick={() => setView(Views.DAY)}
-                                size="sm"
-                            >
-                                Day
-                            </Button>
-                            <Button
-                                variant={view === Views.WEEK ? 'filled' : 'light'}
-                                onClick={() => setView(Views.WEEK)}
-                                size="sm"
-                            >
-                                Week
-                            </Button>
-                            <Button
-                                variant={view === Views.MONTH ? 'filled' : 'light'}
-                                onClick={() => setView(Views.MONTH)}
-                                size="sm"
-                            >
-                                Month
-                            </Button>
-                            <Button
-                                variant="light"
-                                onClick={() => {
-                                    setView(Views.AGENDA);
-                                    setCurrentDate(new Date());
-                                }}
-                                size="sm"
-                            >
-                                Year
-                            </Button>
-                        </Button.Group>
-                    </Group>
-
                     <Box
                         style={{
                             flex: 1,
@@ -293,7 +295,6 @@ export default function DoctorDashboardPage() {
                             onNavigate={(date) => setCurrentDate(date)}
                             eventPropGetter={eventStyleGetter}
                             onSelectEvent={handleSelectEvent}
-                            toolbar={false}
                             slotPropGetter={slotPropGetter}
                             dayPropGetter={dayPropGetter}
                             min={new Date(1970, 0, 1, 8, 0, 0)}
@@ -340,19 +341,6 @@ export default function DoctorDashboardPage() {
                                 </Paper>
                             ))}
                         </Stack>
-                    </Card>
-
-                    <Card withBorder radius="md" shadow="sm">
-                        <Title order={4} mb="sm">
-                            Selected appointment
-                        </Title>
-                        {selectedAppointment ? (
-                            renderAppointmentDetails(selectedAppointment)
-                        ) : (
-                            <Text c="dimmed" size="sm">
-                                Select an appointment to view details.
-                            </Text>
-                        )}
                     </Card>
                 </Box>
             </Box>

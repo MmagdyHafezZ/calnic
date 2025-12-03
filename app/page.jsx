@@ -104,10 +104,10 @@ export default function LoginPage() {
                         height: '66%'
                     }}
                 >
-                    <svg viewBox="0 0 500 500" style={{ width: '100%', height: '100%', opacity: 0.3 }}>
+                    <svg viewBox="0 0 500 500" style={{ width: '100%', height: '100%', opacity: 0.55 }}>
                         <path
                             d="M250,450 C250,450 50,300 50,180 C50,100 100,50 160,50 C200,50 230,70 250,100 C270,70 300,50 340,50 C400,50 450,100 450,180 C450,300 250,450 250,450 Z"
-                            fill="rgba(59, 130, 246, 0.5)"
+                            fill="rgba(59, 130, 246, 0.7)"
                         />
                     </svg>
                 </Box>

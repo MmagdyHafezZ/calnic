@@ -369,61 +369,6 @@ export default function DoctorAvailabilityPage() {
                 </Box>
 
                 <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-                    <Group justify="center" mb="md" gap="md" style={{ position: 'relative' }}>
-                        <Button
-                            variant="subtle"
-                            onClick={() => setCurrentDate(dayjs(currentDate).subtract(1, 'day').toDate())}
-                        >
-                            <IconChevronLeft size={16} />
-                        </Button>
-                        <Title order={3} style={{ minWidth: 240, textAlign: 'center' }}>
-                            {dayjs(currentDate).format(view === Views.DAY ? 'MMMM D, YYYY' : 'MMMM YYYY')}
-                        </Title>
-                        <Button
-                            variant="subtle"
-                            onClick={() => setCurrentDate(dayjs(currentDate).add(1, 'day').toDate())}
-                        >
-                            <IconChevronRight size={16} />
-                        </Button>
-                    </Group>
-                    <Group justify="center" mb="md" gap="xl">
-                        <Button.Group>
-                            <Button variant="light" onClick={() => setCurrentDate(new Date())}>
-                                Today
-                            </Button>
-                            <Button
-                                variant={view === Views.DAY ? 'filled' : 'light'}
-                                onClick={() => setView(Views.DAY)}
-                                size="sm"
-                            >
-                                Day
-                            </Button>
-                            <Button
-                                variant={view === Views.WEEK ? 'filled' : 'light'}
-                                onClick={() => setView(Views.WEEK)}
-                                size="sm"
-                            >
-                                Week
-                            </Button>
-                            <Button
-                                variant={view === Views.MONTH ? 'filled' : 'light'}
-                                onClick={() => setView(Views.MONTH)}
-                                size="sm"
-                            >
-                                Month
-                            </Button>
-                            <Button
-                                variant="light"
-                                onClick={() => {
-                                    setView(Views.AGENDA);
-                                    setCurrentDate(new Date());
-                                }}
-                                size="sm"
-                            >
-                                Year
-                            </Button>
-                        </Button.Group>
-                    </Group>
                     <Paper withBorder radius="md" p="md" style={{ flex: 1, minHeight: 0 }}>
                         <Calendar
                             localizer={localizer}
@@ -437,7 +382,6 @@ export default function DoctorAvailabilityPage() {
                             onNavigate={(date) => setCurrentDate(date)}
                             eventPropGetter={eventStyleGetter}
                             selectable
-                            toolbar={false}
                             onSelectSlot={selectSlot}
                             onSelecting={onSelecting}
                             slotPropGetter={slotPropGetter}

@@ -18,14 +18,17 @@ export default function ProtectedGroupLayout({ children }) {
             <AppShell header={{ height: 70 }} padding="md">
                 <AppShell.Header>
                     <Group h="100%" px="xl" justify="space-between">
-                        <Group
-                            onClick={() => router.push('/')}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <IconStethoscope size={32} color="#3b82f6" />
+                        <Group onClick={() => router.push('/')} style={{ cursor: 'pointer' }} gap="xs" align="center">
                             <Title order={2} c="blue.6">
                                 Calnic
                             </Title>
+                            <img
+                                src="/calnic-icon.png"
+                                alt="Calnic Logo"
+                                width={45}
+                                height={45}
+                                style={{ marginBottom: '5px' }}
+                            />
                         </Group>
                         <Menu shadow="md" width={200}>
                             <Menu.Target>

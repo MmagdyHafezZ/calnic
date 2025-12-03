@@ -34,6 +34,7 @@ export default function DiagnosticQuestionsPage() {
     const setDiagnosticRecommendation = useUIStore((s) => s.setDiagnosticRecommendation);
     const setDiagnosticRanking = useUIStore((s) => s.setDiagnosticRanking);
     const clearDiagnosticRecommendation = useUIStore((s) => s.clearDiagnosticRecommendation);
+    const setDiagnosticAnswers = useUIStore((s) => s.setDiagnosticAnswers);
 
     const flatQuestions = useMemo(() => {
         const list = diagnosticQuestions.flatMap((section) =>
@@ -67,10 +68,11 @@ export default function DiagnosticQuestionsPage() {
 
     useEffect(() => {
         clearDiagnosticRecommendation();
+        setDiagnosticAnswers({});
         if (!isAuthenticated) {
             router.push('/');
         }
-    }, [clearDiagnosticRecommendation, isAuthenticated, router]);
+    }, [clearDiagnosticRecommendation, setDiagnosticAnswers, isAuthenticated, router]);
 
     useEffect(() => {
         if (current?.id) {
@@ -158,6 +160,7 @@ export default function DiagnosticQuestionsPage() {
             reason: recommendation.reason,
             score: recommendation.score
         });
+        setDiagnosticAnswers(answers);
         setDiagnosticRanking(recommendation.ranking);
         router.push('/diagnostic/results');
     };

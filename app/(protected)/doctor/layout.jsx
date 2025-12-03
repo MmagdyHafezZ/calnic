@@ -23,7 +23,7 @@ export default function DoctorLayout({ children }) {
                         <Group style={{ cursor: 'pointer' }} onClick={() => router.push('/doctor/dashboard')}>
                             <IconStethoscope size={32} color="#3b82f6" />
                             <Title order={2} c="blue.6">
-                                Doctor
+                                Calnic
                             </Title>
                         </Group>
                         <Menu shadow="md" width={200}>

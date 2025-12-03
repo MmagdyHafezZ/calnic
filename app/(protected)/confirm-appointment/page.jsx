@@ -38,6 +38,9 @@ export default function ConfirmAppointment() {
             end: new Date(pending.end),
             type: pending.appointmentType || pending.type || 'Booked',
             notes: pending.notes || '',
+            medicalHistory: pending.medicalHistory || '',
+            diagnosticAnswers: pending.diagnosticAnswers || {},
+            diagnosticReason: pending.diagnosticReason || '',
             needsReschedule: false,
             rescheduleNote: null,
             conflictTimeOffId: null

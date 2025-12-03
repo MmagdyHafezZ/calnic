@@ -7,6 +7,7 @@ import {
     Group,
     TextInput,
     Grid,
+    Text,
     Box,
     Title,
     Button,
@@ -21,7 +22,6 @@ import { usePatientsStore } from '../../../store';
 export default function BookPage() {
     const [patientName, setPatientName] = useState('');
     const [appointmentType, setAppointmentType] = useState('Standard');
-    const [symptoms, setSymptoms] = useState('');
     const [medicalHistory, setMedicalHistory] = useState('');
     const [notes, setNotes] = useState('');
     const router = useRouter();
@@ -63,7 +63,7 @@ export default function BookPage() {
         }
     }, [searchParams, getPatientById, selectPatient]);
 
-    const isFormValid = patientName.trim() !== '' && appointmentType && symptoms.trim() !== '';
+    const isFormValid = patientName.trim() !== '' && appointmentType;
 
     return (
         <Box style={{ padding: '2rem', paddingTop: '3rem' }}>
@@ -75,8 +75,12 @@ export default function BookPage() {
                         withBorder
                         style={{ maxWidth: '60vw', height: '80vh', margin: 'auto', marginTop: '2rem', marginLeft: 0 }}
                     >
+                        <Text size="sm" c="dimmed">
+                            Fields marked with <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span> are
+                            required.
+                        </Text>
                         <Grid gutter="md" style={{ marginTop: '2rem' }}>
-                            <Grid.Col span={6}>
+                            <Grid.Col span={12}>
                                 <Title order={3}>
                                     Patient Name: <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
                                 </Title>
@@ -113,9 +117,8 @@ export default function BookPage() {
                                 >
                                     Add New Patient
                                 </Button>
-                            </Grid.Col>
-                            <Grid.Col span={6}>
-                                <Title padding="lg" order={3}>
+
+                                <Title padding="lg" order={3} style={{ marginTop: '1.5rem' }}>
                                     Appointment Type: <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
                                 </Title>
                                 <Radio.Group
@@ -130,22 +133,22 @@ export default function BookPage() {
                                         <Radio value="Specialist" label="Specialist" size="lg" />
                                     </Group>
                                 </Radio.Group>
+
+                                <Title order={3} style={{ marginTop: '2rem' }}>
+                                    Notes
+                                </Title>
+                                <Textarea
+                                    placeholder="Extra notes..."
+                                    autosize
+                                    minRows={6}
+                                    variant="filled"
+                                    size="md"
+                                    style={{ width: '100%', marginTop: '1rem' }}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                />
                             </Grid.Col>
                         </Grid>
-                        <Title order={3} style={{ marginTop: '2rem', marginBottom: '1rem' }}>
-                            Symptoms: <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
-                        </Title>
-                        <Textarea
-                            withAsterisk
-                            placeholder="Describe patient's symptoms..."
-                            autosize
-                            minRows={6}
-                            variant="filled"
-                            size="md"
-                            style={{ width: '100%' }}
-                            value={symptoms}
-                            onChange={(e) => setSymptoms(e.target.value)}
-                        />
                     </Card>
                 </Grid.Col>
                 <Grid.Col span={4}>
@@ -155,26 +158,12 @@ export default function BookPage() {
                             <Textarea
                                 placeholder="List relevant medical history..."
                                 autosize
-                                minRows={6}
+                                minRows={20}
                                 variant="filled"
                                 size="md"
                                 style={{ width: '100%', marginTop: '2rem' }}
                                 value={medicalHistory}
                                 onChange={(e) => setMedicalHistory(e.target.value)}
-                            />
-
-                            <Title order={3} style={{ marginTop: '2rem' }}>
-                                Notes:
-                            </Title>
-                            <Textarea
-                                placeholder="Extra notes..."
-                                autosize
-                                minRows={6}
-                                variant="filled"
-                                size="md"
-                                style={{ width: '100%', marginTop: '2rem' }}
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
                             />
                         </Box>
 
@@ -189,7 +178,6 @@ export default function BookPage() {
                                     const bookingDetails = {
                                         patientName,
                                         appointmentType,
-                                        symptoms,
                                         medicalHistory,
                                         notes
                                     };

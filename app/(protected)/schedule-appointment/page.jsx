@@ -16,7 +16,9 @@ import {
     SimpleGrid,
     Paper,
     Textarea,
-    ScrollArea
+    ScrollArea,
+    Tooltip,
+    ActionIcon
 } from '@mantine/core';
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar';
 import dayjs from 'dayjs';
@@ -24,16 +26,28 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css';
 import { useAppointmentsStore, useDoctorsStore, useUIStore } from '../../../store';
 import { useSearchParams } from 'next/navigation';
+import { IconInfoCircle } from '@tabler/icons-react';
 
 const APPOINTMENT_DURATION_BY_TYPE = {
     'Walk-in': 20,
     'Follow-up': 20,
     Standard: 20,
-    'Full Exam': 40,
-    Specialist: 40
+    'Full Exam': 40
 };
 
 const getDurationForType = (type) => APPOINTMENT_DURATION_BY_TYPE[type] || null;
+const APPOINTMENT_OPTIONS = [
+    { value: 'Walk-in', label: 'Walk-in', info: 'Quick visit for immediate needs', duration: '20 minutes' },
+    { value: 'Follow-up', label: 'Follow-up', info: 'Post-visit or results review', duration: '20 minutes' },
+    { value: 'Standard', label: 'Standard', info: 'General consultation', duration: '20 minutes' },
+    { value: 'Full Exam', label: 'Full Exam', info: 'Comprehensive exam', duration: '40 minutes' },
+    {
+        value: 'Custom',
+        label: 'Custom',
+        info: 'Set a custom duration by dragging on the calendar',
+        duration: 'Manual'
+    }
+];
 
 export default function SchedulePage() {
     const router = useRouter();
@@ -93,6 +107,32 @@ export default function SchedulePage() {
             setManualSymptoms('');
         }
     }, [shouldShowManualSymptoms]);
+
+    const handleAppointmentTypeChange = (type) => {
+        setAppointmentType(type);
+        const mapped = type === 'Custom' ? null : getDurationForType(type);
+        const nextDuration = mapped || duration || APPOINTMENT_DURATION_BY_TYPE.Standard;
+        if (mapped) {
+            setDuration(mapped);
+        }
+
+        if (selectedAppointment) {
+            const start =
+                selectedAppointment.start instanceof Date
+                    ? selectedAppointment.start
+                    : new Date(selectedAppointment.start);
+            const end =
+                selectedAppointment.end instanceof Date ? selectedAppointment.end : new Date(selectedAppointment.end);
+            const updatedEnd = mapped && start ? dayjs(start).add(mapped, 'minute').toDate() : end;
+            selectAppointment({
+                ...selectedAppointment,
+                appointmentType: type,
+                duration: nextDuration,
+                start,
+                end: updatedEnd || end
+            });
+        }
+    };
 
     useEffect(() => {
         if (diagnosticRecommendation?.doctorName) {
@@ -498,7 +538,36 @@ export default function SchedulePage() {
                             ))}
                         </Stack>
                     </Radio.Group>
-
+                    <Paper withBorder radius="md" p="md">
+                        <Title order={5} mb="xs">
+                            Appointment Type
+                        </Title>
+                        <Radio.Group value={appointmentType} onChange={handleAppointmentTypeChange}>
+                            <Stack gap="xs">
+                                {APPOINTMENT_OPTIONS.map((opt) => (
+                                    <Radio
+                                        key={opt.value}
+                                        value={opt.value}
+                                        styles={{ label: { width: '100%' } }}
+                                        label={
+                                            <Group gap={6}>
+                                                <Text fw={600}>{opt.label}</Text>
+                                                <Tooltip
+                                                    label={`${opt.info} • ${opt.duration}`}
+                                                    withArrow
+                                                    position="right"
+                                                >
+                                                    <ActionIcon size="sm" variant="subtle" color="gray">
+                                                        <IconInfoCircle size={14} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Group>
+                                        }
+                                    />
+                                ))}
+                            </Stack>
+                        </Radio.Group>
+                    </Paper>
                     <Button variant="light" color="gray" onClick={() => setSelectedDoctor('')}>
                         Clear selection
                     </Button>

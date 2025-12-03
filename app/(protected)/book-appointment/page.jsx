@@ -28,6 +28,7 @@ export default function BookPage() {
     const [appointmentType, setAppointmentType] = useState('Standard');
     const [medicalHistory, setMedicalHistory] = useState('');
     const [notes, setNotes] = useState('');
+    const [hasPatientMatch, setHasPatientMatch] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const patients = usePatientsStore((s) => s.patients);
@@ -63,17 +64,25 @@ export default function BookPage() {
                 hasPrefilledFromParams.current = true;
                 setPatientName(found.name);
                 selectPatient(found);
+                setHasPatientMatch(true);
             }
         }
     }, [searchParams, getPatientById, selectPatient]);
 
-    const isFormValid = patientName.trim() !== '' && appointmentType;
+    const matchedPatient = useMemo(
+        () => patients.find((p) => p.name?.toLowerCase() === patientName.trim().toLowerCase()),
+        [patients, patientName]
+    );
+    useEffect(() => {
+        setHasPatientMatch(!!matchedPatient);
+    }, [matchedPatient]);
+
+    const isFormValid = patientName.trim() !== '' && appointmentType && hasPatientMatch;
     const appointmentOptions = [
         { value: 'Walk-in', label: 'Walk-in', info: 'Quick visit for immediate needs', duration: '20 minutes' },
         { value: 'Follow-up', label: 'Follow-up', info: 'Post-visit or results review', duration: '20 minutes' },
         { value: 'Standard', label: 'Standard', info: 'General consultation', duration: '20 minutes' },
         { value: 'Full Exam', label: 'Full Exam', info: 'Comprehensive exam', duration: '40 minutes' },
-        { value: 'Specialist', label: 'Specialist', info: 'Specialist consult', duration: '40 minutes' },
         {
             value: 'Custom',
             label: 'Custom',
@@ -118,17 +127,19 @@ export default function BookPage() {
                                         if (match) selectPatient(match);
                                     }}
                                 />
-                                <Button
-                                    size="md"
-                                    style={{ marginTop: '1rem' }}
-                                    onClick={() => {
-                                        const targetName = patientName?.trim();
-                                        const query = targetName ? `?name=${encodeURIComponent(targetName)}` : '';
-                                        router.push(`/new-patient${query}`);
-                                    }}
-                                >
-                                    Add New Patient
-                                </Button>
+                                {!hasPatientMatch && patientName.trim() !== '' && (
+                                    <Button
+                                        size="md"
+                                        style={{ marginTop: '1rem' }}
+                                        onClick={() => {
+                                            const targetName = patientName?.trim();
+                                            const query = targetName ? `?name=${encodeURIComponent(targetName)}` : '';
+                                            router.push(`/new-patient${query}`);
+                                        }}
+                                    >
+                                        Add New Patient (required for new patients)
+                                    </Button>
+                                )}
 
                                 <Title padding="lg" order={3} style={{ marginTop: '1.5rem' }}>
                                     Appointment Type: <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>

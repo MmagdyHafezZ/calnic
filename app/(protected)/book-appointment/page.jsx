@@ -22,6 +22,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePatientsStore } from '../../../store';
 import { IconInfoCircle } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 
 export default function BookPage() {
     const [patientName, setPatientName] = useState('');
@@ -35,6 +36,7 @@ export default function BookPage() {
     const selectPatient = usePatientsStore((s) => s.selectPatient);
     const getPatientById = usePatientsStore((s) => s.getPatientById);
     const hasPrefilledFromParams = useRef(false);
+    const isNarrow = useMediaQuery('(max-width: 1024px)');
 
     const patientOptions = useMemo(() => {
         const seen = new Set();
@@ -92,10 +94,14 @@ export default function BookPage() {
     ];
 
     return (
-        <Box style={{ padding: '2rem', paddingTop: '3rem' }}>
+        <Box style={{ padding: '1.5rem', paddingTop: '2rem' }}>
             <Grid gutter="md">
-                <Grid.Col span={8}>
-                    <ScrollArea.Autosize style={{ height: '80vh', maxHeight: '80vh' }} type="always" offsetScrollbars>
+                <Grid.Col span={{ base: 12, lg: 8 }}>
+                    <ScrollArea.Autosize
+                        style={{ height: isNarrow ? 'auto' : '80vh', maxHeight: isNarrow ? 'unset' : '80vh' }}
+                        type="always"
+                        offsetScrollbars
+                    >
                         <Text size="sm" c="dimmed">
                             Fields marked with <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span> are
                             required.
@@ -194,28 +200,32 @@ export default function BookPage() {
                         </Grid>
                     </ScrollArea.Autosize>
                 </Grid.Col>
-                <Grid.Col span={4}>
-                    <Flex direction="column" mih="85vh" style={{ paddingTop: '2rem' }}>
+                <Grid.Col span={{ base: 12, lg: 4 }}>
+                    <Flex
+                        direction="column"
+                        mih={isNarrow ? 'auto' : '85vh'}
+                        style={{ paddingTop: '2rem', gap: '1rem' }}
+                    >
                         <Box style={{ flexGrow: 1 }}>
                             <Title order={3}>Relevant Medical History:</Title>
                             <Textarea
                                 placeholder="List relevant medical history..."
                                 autosize
-                                minRows={20}
+                                minRows={isNarrow ? 6 : 20}
                                 variant="filled"
                                 size="md"
-                                style={{ width: '100%', marginTop: '2rem' }}
+                                style={{ width: '100%', marginTop: '1.25rem' }}
                                 value={medicalHistory}
                                 onChange={(e) => setMedicalHistory(e.target.value)}
                             />
                         </Box>
 
-                        <Group mt="auto">
-                            <Button size="xl" onClick={() => router.back()}>
+                        <Group mt="auto" justify={isNarrow ? 'flex-end' : 'flex-start'}>
+                            <Button size="lg" onClick={() => router.back()}>
                                 Cancel
                             </Button>
                             <Button
-                                size="xl"
+                                size="lg"
                                 disabled={!isFormValid}
                                 onClick={() => {
                                     const bookingDetails = {

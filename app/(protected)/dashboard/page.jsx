@@ -51,7 +51,8 @@ export default function DashboardPage() {
         selectedAppointment,
         selectAppointment,
         clearSelectedAppointment,
-        clearRescheduleFlag
+        clearRescheduleFlag,
+        deleteAppointment
     } = useAppointmentsStore();
     const { doctors } = useDoctorsStore();
     const { patients } = usePatientsStore();
@@ -164,6 +165,17 @@ export default function DashboardPage() {
         closeAppointmentDetailsModal();
         router.push(`/schedule-appointment${doctorIdParam}`);
     }, [selectedAppointment, setCalendarView, setCurrentDate, closeAppointmentDetailsModal, router]);
+
+    const handleCancelAppointment = useCallback(() => {
+        const confirmCancel = typeof window !== 'undefined' ? window.confirm('Cancel this appointment?') : true;
+        if (!confirmCancel) return;
+        if (!selectedAppointment?.id) {
+            handleCloseAppointmentModal();
+            return;
+        }
+        deleteAppointment(selectedAppointment.id);
+        handleCloseAppointmentModal();
+    }, [selectedAppointment, deleteAppointment, handleCloseAppointmentModal]);
 
     const diagnosticSummary = useMemo(() => {
         const answers = selectedAppointment?.diagnosticAnswers;
@@ -831,6 +843,9 @@ export default function DashboardPage() {
                                             <Group mt="md" gap="sm">
                                                 <Button size="sm" onClick={handleEditAppointment}>
                                                     Change appointment
+                                                </Button>
+                                                <Button size="sm" variant="outline" color="red" onClick={handleCancelAppointment}>
+                                                    Cancel appointment
                                                 </Button>
                                             </Group>
                                         </>

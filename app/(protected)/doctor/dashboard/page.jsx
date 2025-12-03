@@ -23,6 +23,7 @@ import {
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useAppointmentsStore, useDoctorsStore, usePatientsStore, useAuthStore } from '../../../../store';
 import { diagnosticQuestions } from '../../../../data/diagnostic-questions';
+import { useMediaQuery } from '@mantine/hooks';
 
 const localizer = dayjsLocalizer(dayjs);
 
@@ -38,6 +39,7 @@ export default function DoctorDashboardPage() {
     const [status, setStatus] = useState('Appt');
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [now, setNow] = useState(() => dayjs());
+    const isNarrow = useMediaQuery('(max-width: 1100px)');
 
     const doctor = useMemo(() => {
         if (!user) return null;
@@ -267,9 +269,23 @@ export default function DoctorDashboardPage() {
     }
 
     return (
-        <AppShell.Main style={{ height: 'calc(100vh - 70px)', overflow: 'hidden' }}>
-            <Box style={{ display: 'flex', gap: '1rem', height: '100%', minHeight: 0 }}>
-                <Box style={{ width: '260px', flexShrink: 0 }}>
+        <AppShell.Main
+            style={{
+                height: isNarrow ? 'auto' : 'calc(100vh - 70px)',
+                overflow: isNarrow ? 'auto' : 'hidden',
+                padding: isNarrow ? '0.75rem' : undefined
+            }}
+        >
+            <Box
+                style={{
+                    display: 'flex',
+                    flexDirection: isNarrow ? 'column' : 'row',
+                    gap: '1rem',
+                    height: isNarrow ? 'auto' : '100%',
+                    minHeight: 0
+                }}
+            >
+                <Box style={{ width: isNarrow ? '100%' : '260px', flexShrink: 0 }}>
                     <Stack gap="md">
                         <Card withBorder radius="md" shadow="sm">
                             <Stack gap="sm">
@@ -296,14 +312,23 @@ export default function DoctorDashboardPage() {
                     </Stack>
                 </Box>
 
-                <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                <Box
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        minHeight: 0,
+                        overflow: isNarrow ? 'visible' : 'hidden'
+                    }}
+                >
                     <Box
                         style={{
                             flex: 1,
                             backgroundColor: 'white',
                             borderRadius: '8px',
-                            padding: '1rem',
-                            minHeight: 0
+                            padding: isNarrow ? '0.5rem' : '1rem',
+                            minHeight: 0,
+                            height: isNarrow ? '60vh' : 'auto'
                         }}
                     >
                         <Calendar
@@ -329,12 +354,13 @@ export default function DoctorDashboardPage() {
 
                 <Box
                     style={{
-                        width: '320px',
+                        width: isNarrow ? '100%' : '320px',
                         flexShrink: 0,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '1rem',
-                        minHeight: 0
+                        minHeight: 0,
+                        marginTop: isNarrow ? '1rem' : 0
                     }}
                 >
                     <Card withBorder radius="md" shadow="sm" style={{ flex: 1, minHeight: 0 }}>

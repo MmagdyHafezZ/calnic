@@ -27,6 +27,7 @@ import './calendar.css';
 import { useAppointmentsStore, useDoctorsStore, useUIStore } from '../../../store';
 import { useSearchParams } from 'next/navigation';
 import { IconInfoCircle } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 
 const APPOINTMENT_DURATION_BY_TYPE = {
     'Walk-in': 20,
@@ -53,6 +54,7 @@ export default function SchedulePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const localizer = dayjsLocalizer(dayjs);
+    const isNarrow = useMediaQuery('(max-width: 1100px)');
 
     const [view, setView] = useState(Views.MONTH);
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -479,12 +481,25 @@ export default function SchedulePage() {
     const selectedDoctorValue = typeof selectedDoctor === 'string' ? selectedDoctor : '';
 
     return (
-        <Box style={{ display: 'flex', padding: '2rem', gap: '2rem', marginTop: '4rem' }}>
+        <Box
+            style={{
+                display: 'flex',
+                padding: isNarrow ? '1rem' : '2rem',
+                gap: '1.5rem',
+                marginTop: isNarrow ? '2rem' : '4rem',
+                flexDirection: isNarrow ? 'column' : 'row'
+            }}
+        >
             <ScrollArea.Autosize
                 shadow="sm"
                 padding="lg"
                 withBorder
-                style={{ width: '28%', minWidth: '260px', height: '80vh', display: 'flex' }}
+                style={{
+                    width: isNarrow ? '100%' : '28%',
+                    minWidth: isNarrow ? '100%' : '260px',
+                    height: isNarrow ? 'auto' : '80vh',
+                    display: 'flex'
+                }}
             >
                 <Stack gap="lg" style={{ flex: 1, overflowY: 'auto' }}>
                     <Title order={3}>Select Doctor</Title>
@@ -630,10 +645,10 @@ export default function SchedulePage() {
                 </Stack>
             </ScrollArea.Autosize>
 
-            <Box style={{ width: '72%', display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ width: isNarrow ? '100%' : '72%', display: 'flex', flexDirection: 'column' }}>
                 <Box
                     style={{
-                        height: '70vh',
+                        height: isNarrow ? '60vh' : '70vh',
                         backgroundColor: 'white',
                         borderRadius: '8px',
                         padding: '1rem',

@@ -2,14 +2,24 @@
 
 A web application for managing medical clinic appointments, built for a course project.
 
+## Authors (Full Names)
+
+- Magdy Hafez
+- Nick Holt
+- Adiba Hossain
+- Kosisochukwu Igbokwe
+
 ## What is this?
 
 This is a clinic management system where you can:
-- Login as a staff member
-- View a calendar of appointments
-- See doctor availability
-- Search for patients
-- View today's appointments
+
+- Login as a staff member (Front Desk Admin)
+- Login as a doctor
+- View multiple calendar views (Day, Week, Month, Year)
+- Add new patients
+- Create and confirm bookings
+- Book off holidays for doctors
+- Resolve conflicts caused by doctor holidays
 
 ## Setup Instructions (Step by Step)
 
@@ -17,219 +27,235 @@ This is a clinic management system where you can:
 
 Node.js is required to run this project.
 
-1. Go to [nodejs.org](https://nodejs.org/)
-2. Download the **LTS version** (the one that says "Recommended For Most Users")
+1. Go to https://nodejs.org/
+2. Download the LTS version (Recommended For Most Users)
 3. Run the installer and follow the prompts
-4. To verify it's installed, open your terminal/command prompt and type:
+4. Verify in terminal:
    ```bash
    node --version
    ```
-   You should see a version number like `v18.x.x` or higher
+   You should see v18.x.x or higher
 
 ### Step 2: Install pnpm
 
-pnpm is a package manager (like npm but faster).
-
-1. Open your terminal/command prompt
-2. Run this command:
-   ```bash
-   npm install -g pnpm
-   ```
-3. Verify it's installed:
-   ```bash
-   pnpm --version
-   ```
-   You should see a version number
+```bash
+npm install -g pnpm
+pnpm --version
+```
 
 ### Step 3: Get the Project Files
 
-1. Download or clone this project to your computer
-2. Open your terminal/command prompt
-3. Navigate to the project folder:
-   ```bash
-   cd path/to/calnic
-   ```
-   (Replace `path/to/` with where you saved the project)
+```bash
+cd path/to/calnic
+```
 
 ### Step 4: Install Dependencies
-
-This downloads all the libraries the project needs.
 
 ```bash
 pnpm install
 ```
 
-This might take a few minutes. You'll see a progress bar.
-
 ### Step 5: Run the Project
-
-Start the development server:
 
 ```bash
 pnpm dev
 ```
 
-You should see something like:
-```
-ready - started server on 0.0.0.0:3000, url: http://localhost:3000
-```
+Open http://localhost:3000 in your browser.
 
-### Step 6: Open in Browser
+## Exact Walkthrough
 
-1. Open your web browser (Chrome, Firefox, Safari, etc.)
-2. Go to: **http://localhost:3000**
-3. You should see the login page!
+Follow these steps precisely to experience the core features.
 
-## How to Login
+### 1) Login and view different calendar views (Front Desk Admin first)
 
-Use these credentials:
-- **Username:** `admin`
-- **Password:** `admin`
+- On the Login page, type:
+  - Username: `admin`
+  - Password: `admin`
+- Click “Login”
+- You will land on the Dashboard
+- In the center calendar:
+  - Click “Day” to view single-day schedule
+  - Click “Week” to view weekly schedule
+  - Click “Month” to view monthly schedule
+  - Click “Agenda” to view list of appointments
+- Use the "Today" button to return to the current date
+- Use the "Back" and "Next" arrows to navigate dates
+- Observe colored blocks:
+  - Green: Dr. Ahmed bookings
+  - Pink: Dr. Turner bookings
+  - Orange: Dr. Mike bookings
+  - Blue: Dr. Joel bookings
+
+### 2) Add new patient
+
+- In the left sidebar, click “Add Patient”
+- Fill out the New Patient form (fields marked \* are required). Enter appropriate values for:
+  - Patient Info:
+    - Name: e.g., `Jane Doe`
+    - Date of Birth: e.g., `05/12/1990` (mm/dd/yyyy)
+    - Alberta Personal Healthcare #: e.g., `1234567890`
+  - Contact Info:
+    - Phone Number: e.g., `555-0101`
+    - Email Address: e.g., `jane.doe@example.com`
+  - Emergency Contact:
+    - Name: e.g., `John Doe`
+    - Phone Number: e.g., `555-0102`
+    - Relation: e.g., `Spouse`
+- Click “Save Patient’s Info”
+- You should see a success confirmation page
+- Click “Back to Dashboard”
+
+### 3) Create a booking and go through the booking guide
+
+- In the left sidebar, click “Book”
+- Booking guide steps:
+  1. Select Patient:
+     - Use search and select `Jane Doe`
+  2. Select Doctor:
+     - Choose `Dr. Turner`
+  3. Select Date and Time:
+     - Date: pick a day this week
+     - Time: choose an available slot
+  4. Select Appointment Type:
+     - Choose `Consultation`
+  5. Notes:
+     - Type: `First-time consultation`
+  - Click “Confirm”
+- Review on the confirmation screen, then click “Submit Booking”
+- You should see the appointment appear on the calendar and in Today’s appointments (right sidebar if it’s today)
+
+### 4) Switch to doctor login
+
+- Click “Logout”
+- On the Login page, type:
+  - Username: `turner`
+  - Password: `doctor`
+- Click “Login”
+- You will land on the Doctor Dashboard
+
+### 5) Book off a holiday (Doctor)
+
+- Navigate to Doctor > Availability
+- Click “Book Off Holiday”
+- Enter:
+  - Start Date: pick a date range that overlaps with your existing bookings (e.g., start next Monday)
+  - End Date: 5 days after start date
+  - Reason: `Annual leave`
+- Click “Save”
+- The system will mark those days as unavailable and may flag conflicts for existing appointments
+
+### 6) Switch back to Front Desk Admin and resolve any problems with the book-off holiday
+
+- Click “Logout”
+- Login again as Front Desk Admin:
+  - Username: `admin`
+  - Password: `admin`
+- Go to Dashboard
+- Check the right sidebar for alerts/conflicts or open the calendar to see conflicted bookings
+- For each conflict:
+  - Click the conflicted appointment
+  - Choose “Reschedule”
+  - Pick a new date/time outside the doctor’s holiday range
+  - Confirm changes
+- Verify that conflicts are cleared and the calendar shows updated appointments
+
+## What cases/functions were implemented?
+
+- Authentication:
+  - Front Desk Admin login (admin/admin)
+  - Doctor login (turner/doctor)
+- Patient Management:
+  - Add new patient form and persistence in store
+- Appointment Booking:
+  - Multi-step booking guide (select patient, doctor, date/time, type, notes, confirm)
+  - Appointment confirmation and calendar rendering
+- Calendar Views:
+  - Day, Week, Month, Year toggle and navigation
+- Doctor Availability:
+  - Book off holiday periods
+  - Conflict detection for overlapping appointments
+- Conflict Resolution:
+  - Front Desk flow to reschedule affected appointments
+
+## What data should be entered and when?
+
+- At Login:
+  - Admin: username `admin`, password `admin`
+  - Doctor: username `turner`, password `doctor`
+- New Patient Form:
+  - Enter full demographics before creating bookings (name, DOB, contact, address)
+- Booking Guide:
+  - Select existing patient
+  - Select doctor
+  - Select date/time in available slots
+  - Choose appointment type
+  - Optional notes
+- Book Off Holiday (Doctor):
+  - Enter start date, end date, reason
+- Conflict Resolution (Admin):
+  - Open conflicted appointment
+  - Select a new date/time outside holiday range
+  - Confirm changes
 
 ## How to Stop the Server
 
-Press `Ctrl + C` in the terminal where it's running.
+Press Ctrl + C in the terminal.
 
-## How the Project Works
+## Technology Stack
 
-### What You'll See
+- Next.js
+- React
+- Mantine UI
+- React Big Calendar
+- Tailwind CSS
 
-#### Login Page
-- Left side: Calnic branding and information
-- Right side: Login form
-- Enter username and password to access the dashboard
-
-#### Dashboard
-The dashboard has three main sections:
-
-1. **Left Sidebar**
-   - "Book" button - for booking new appointments
-   - "Add Patient" button - for adding new patients
-   - Doctor Availability panel - shows which doctors are available, operating, on break, or remote
-
-2. **Center (Calendar)**
-   - Big calendar showing appointments
-   - Buttons at top to switch views: Day, Week, Month, Year
-   - Arrows to go to previous/next month
-   - Colored blocks show different appointment types:
-     - Yellow = Morning appointments or Afternoon full
-     - Green = Afternoon appointments available
-
-3. **Right Sidebar**
-   - Search bar to find patients
-   - List of today's appointments with:
-     - Patient name
-     - Doctor name
-     - Date and time
-
-### Behind the Scenes
-
-#### Technology Stack
-- **Next.js** - The main framework (handles pages and routing)
-- **React** - For building the user interface
-- **Mantine UI** - Pre-made UI components (buttons, inputs, etc.)
-- **React Big Calendar** - The calendar component
-- **Tailwind CSS** - For styling
-
-#### Project Structure
+## Project Structure
 
 ```
 calnic/
-│
-├── app/                    # All the pages and routes
-│   ├── page.jsx           # Login page
-│   ├── dashboard/         # Dashboard page
-│   ├── api/login/         # Login API
-│   └── layout.jsx         # Wraps all pages
-│
-├── data/                  # Where data is stored
-│   ├── accounts.json      # User login info
-│   └── mock-data.js       # Fake appointments and doctors
-│
-└── styles/                # CSS styling files
+├── app/                    # Pages and routes
+│   ├── page.jsx            # Login page
+│   ├── (protected)/        # Protected app areas
+│   └── api/login/          # Login API
+├── components/             # UI components
+├── data/                   # Fake data (accounts, appointments)
+├── store/                  # Application state stores
+└── styles/                 # CSS styling files
 ```
-
-#### How Login Works
-
-1. You enter username and password
-2. Click "Login" button
-3. App sends request to `/api/login`
-4. API checks `data/accounts.json` for matching username/password
-5. If correct: saves user info and redirects to dashboard
-6. If wrong: shows error message
-
-#### How the Dashboard Works
-
-1. Loads user info from browser storage
-2. Loads appointments from `data/mock-data.js`
-3. Displays calendar with appointments
-4. Filters today's appointments for the right sidebar
-
-### Current Data
-
-Right now, the app uses **fake data** stored in files:
-- Users: `data/accounts.json`
-- Appointments: `data/mock-data.js`
-
-In a real app, this would connect to a database.
 
 ## Common Issues
 
-### Port 3000 Already in Use
-
-If you see an error about port 3000:
-```bash
-# Try a different port
-PORT=3001 pnpm dev
-```
-
-### "Command not found: pnpm"
-
-Make sure you installed pnpm (Step 2 above):
-```bash
-npm install -g pnpm
-```
-
-### Dependencies Error
-
-If something goes wrong with installation:
-```bash
-# Delete node_modules and try again
-rm -rf node_modules
-pnpm install
-```
-
-### Browser Shows Blank Page
-
-1. Check the terminal for errors
-2. Try refreshing the page
-3. Clear your browser cache
-4. Make sure the server is running (you should see the "ready" message)
+- Port 3000 in use:
+  ```bash
+  PORT=3001 pnpm dev
+  ```
+- Command not found: pnpm
+  ```bash
+  npm install -g pnpm
+  ```
+- Dependencies error:
+  ```bash
+  rm -rf node_modules
+  pnpm install
+  ```
 
 ## Useful Commands
 
 ```bash
-# Start development server
-pnpm dev
-
-# Stop the server
-Press Ctrl + C
-
-# Check for code issues
-pnpm lint
-
-# Build for production
-pnpm build
+pnpm dev       # Start development server
+pnpm build     # Build for production
+pnpm lint      # Check for code issues
 ```
 
 ## Need Help?
 
-If you're stuck:
-1. Check the error message in the terminal
-2. Google the error message
-3. Ask your teammates
-4. Check the `docs/` folder for more detailed info
+- Check terminal errors
+- Refresh the page
+- Clear browser cache
+- Confirm the server is running
+- See docs/PROJECT_GUIDE.md for more details
 
 ---
 
-**Made for Calnic Medical Clinic Course Project**
+Made for Calnic Medical Clinic Course Project

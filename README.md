@@ -1,11 +1,11 @@
 # Calnic Medical Clinic
 
-A web application for managing medical clinic appointments, built for a course project.
+A web application design to help clinic staff manage medical clinic appointments, built for CPSC 441 Design Portfolio 2.
 
 ## Authors (Full Names)
 
 - Magdy Hafez
-- Nick Holt
+- Nicholas Holt
 - Adiba Hossain
 - Kosisochukwu Igbokwe
 
@@ -63,9 +63,11 @@ pnpm dev
 
 Open http://localhost:3000 in your browser.
 
-## Exact Walkthrough
+## Walkthrough
 
-Follow these steps precisely to experience the core features.
+Follow these steps precisely to experience the core features. Refer to the demo video to see features in action!
+
+Note: Some patients and appointments have already been added to simulate the system in action.
 
 ### 1) Login and view different calendar views (Front Desk Admin first)
 
@@ -73,7 +75,7 @@ Follow these steps precisely to experience the core features.
   - Username: `admin`
   - Password: `admin`
 - Click “Login”
-- You will land on the Dashboard
+- You will land on the dashboard
 - In the center calendar:
   - Click “Day” to view single-day schedule
   - Click “Week” to view weekly schedule
@@ -81,11 +83,17 @@ Follow these steps precisely to experience the core features.
   - Click “Agenda” to view list of appointments
 - Use the "Today" button to return to the current date
 - Use the "Back" and "Next" arrows to navigate dates
+- Selecting a date on the calendar will bring you to that date's day-view
 - Observe colored blocks:
   - Green: Dr. Ahmed bookings
   - Pink: Dr. Turner bookings
   - Orange: Dr. Mike bookings
   - Blue: Dr. Joel bookings
+- Click on any booking to see more information and access functions such as "Change Appointment" and "Cancel"
+- Toggle doctor bookings using the selection buttons on the left
+- Search for a patients bookings using the search bar in the right top corner
+  - Clear filters using the x
+- At any point, use the Calnic Logo in the top left hand corner to return to this screen.
 
 ### 2) Add new patient
 
@@ -104,29 +112,47 @@ Follow these steps precisely to experience the core features.
     - Relation: e.g., `Spouse`
 - Click “Save Patient’s Info”
 - You should see a success confirmation page
-- Click “Back to Dashboard”
+- Click “Back to Dashboard” or make a booking
 
-### 3) Create a booking and go through the booking guide
+### 3) Create a booking
 
-- In the left sidebar, click “Book”
+- On the left sidebar, click “Book”
 - Booking guide steps:
   1. Select Patient:
-     - Use search and select `Jane Doe`
-  2. Select Doctor:
-     - Choose `Dr. Turner`
-  3. Select Date and Time:
-     - Date: pick a day this week
-     - Time: choose an available slot
-  4. Select Appointment Type:
-     - Choose `Consultation`
-  5. Notes:
-     - Type: `First-time consultation`
-  - Click “Confirm”
-- Review on the confirmation screen, then click “Submit Booking”
-- You should see the appointment appear on the calendar and in Today’s appointments (right sidebar if it’s today)
+     - As you type in the patient text-box, you can select an existing patient that appears below.
+     - If the patient is not already in the database, an "Add Patient" button will appear. You can use this to add a new patient while booking.
+  2. Select Appointment Type:
+     - Use the radio buttons to select an appointment type.
+     - Hover over the information icons on the left side of the appointment types to see more information.
+  3. Add Notes and Medical History:
+     - Use the input boxes labelled "Notes" and "Relevant Medical History" to add infromation to the booking. This info can be viewed at the end of the booking and on the dashboard when the appointment is selected.
+  4. Click "Confirm"
+  5. Decide on Using Diagnostic Questionnaire:
+     - If used, answer each question (Note: questions are reactive and will given based on previous answers)
+     - You may also skip the rest of the diagnostic at any time
+     - If the questionnaire is skipped, move to step 7.
+  6. Choose Docter:
+     - Upon completing the questionnaire, you will be given a page to choose a doctor.
+     - The doctor at the top of the page is the recommended doctor based on answers to the previous questions.
+     - Select "Book with Doctor" on any of the doctors.
+     - You may also choose the "Next Available Doctor" or "Change Answers" using the buttons at the top right.
+  7. Schedule:
+     - Use the left toolbar to change doctor choice, appointment type, and add to the "Symptoms" input box if necessary.
+     - Use the calendar to select a date by pressing on the day.
+     - Either use the "Quick Time" suggestions given on the left toolbar, or select your own timeslot on the calendar itself once a day is chosen.
+     - Note: if custom time is chosen, you may drag on the calendar to add a custom length appointment
+     - Appointments may not be booked where the calendar block is greyed out (due to another appointment with the selected doctor, or an invalid date. Doing so will give an error message.
+  8. Click “Next: Confirm”:
+     - Review on the confirmation screen, then click “Confirm Appointment”.
+     - A success screen will be shown, from here you can review details.
+     - Select "Open PDF" to print or download appointment details.
+  9. View Appointment:
+     - Use "Back to Dashboard" to return to the dashboard.
+     - From here, you will be able to navigate to your new booking, using "Search Patient" or "Filter by Doctor" if needed.
+     - Clicking on the booking will give in-depth information on booking information.
 
-### 4) Switch to doctor login
-
+### 4) Switch to Doctor Login
+- Click on the user's name (John Doe) in the top right corner
 - Click “Logout”
 - On the Login page, type:
   - Username: `turner`
@@ -134,29 +160,29 @@ Follow these steps precisely to experience the core features.
 - Click “Login”
 - You will land on the Doctor Dashboard
 
-### 5) Book off a holiday (Doctor)
+### 5) Book Off Time and Manage Status from Doctor Dashboard
 
-- Navigate to Doctor > Availability
-- Click “Book Off Holiday”
-- Enter:
-  - Start Date: pick a date range that overlaps with your existing bookings (e.g., start next Monday)
-  - End Date: 5 days after start date
-  - Reason: `Annual leave`
-- Click “Save”
-- The system will mark those days as unavailable and may flag conflicts for existing appointments
+- Select the "Change Availability" button
+- To book time off:
+  - Either drag to select a date range, or manually pick a range using the "Start" and "End" boxes.
+  - Add a reason to the "Reason" input box.
+  - Select "Review". If the range you provided overlaps with already booked appointments, you will receive a warning.
+  - Press "Confirm" to confirm the time off.
+  - All time off will be added to the "Unavailable blocks" section. You may also remove time off from here.
+  - Either select "Add more" or "Back to schedule"
+- The doctor dashboard also allows the doctor to select their current status. Use the dropdown menu on the left toolbar to do so.
+- All of Dr. Turner's appointments can be viewed from his dashboard.
 
-### 6) Switch back to Front Desk Admin and resolve any problems with the book-off holiday
+### 6) Switch back to Front Desk Admin and resolve any problems with the book-off holiday (only if a conflict was created earlier)
 
-- Click “Logout”
+- Logout using the profile button in the top right hand corner.
 - Login again as Front Desk Admin:
   - Username: `admin`
   - Password: `admin`
-- Go to Dashboard
 - Check the right sidebar for alerts/conflicts or open the calendar to see conflicted bookings
 - For each conflict:
-  - Click the conflicted appointment
-  - Choose “Reschedule”
-  - Pick a new date/time outside the doctor’s holiday range
+  - Use the warning and press "Reschedule" or find the conflict in the calendar and press "Change Appointment"
+  - Pick a new date/time outside the doctor’s holiday range (which will now be greyed out)
   - Confirm changes
 - Verify that conflicts are cleared and the calendar shows updated appointments
 
@@ -165,18 +191,29 @@ Follow these steps precisely to experience the core features.
 - Authentication:
   - Front Desk Admin login (admin/admin)
   - Doctor login (turner/doctor)
+  - Ability to switch accounts
+  - User's stay logged in, even if the website is reloaded
 - Patient Management:
   - Add new patient form and persistence in store
 - Appointment Booking:
-  - Multi-step booking guide (select patient, doctor, date/time, type, notes, confirm)
+  - Multi-step booking guide including step by step patient question's and doctor recommendations
   - Appointment confirmation and calendar rendering
+  - Double booking prevention
 - Calendar Views:
   - Day, Week, Month, Year toggle and navigation
+- Calendar Filters:
+  - Filter by Doctor and Search Patient
+- Appointment Management:
+  - Select appointments to get information and edit or cancel
 - Doctor Availability:
-  - Book off holiday periods
+  - Book off time
   - Conflict detection for overlapping appointments
 - Conflict Resolution:
   - Front Desk flow to reschedule affected appointments
+- Error prevention
+  - Appointments cannot be booked during invalid times (past dates, clinic closed, time off, preexisting appointment)
+  - Patient's must be added to system before a booking is made with them
+  - Mandatory fields are marked with a star and must be completed before continuing
 
 ## What data should be entered and when?
 
@@ -185,12 +222,10 @@ Follow these steps precisely to experience the core features.
   - Doctor: username `turner`, password `doctor`
 - New Patient Form:
   - Enter full demographics before creating bookings (name, DOB, contact, address)
-- Booking Guide:
-  - Select existing patient
-  - Select doctor
-  - Select date/time in available slots
-  - Choose appointment type
-  - Optional notes
+- Booking Appointment:
+  - Patient name that is already in the database
+  - Notes, Medical History, Symptoms all optional
+  - Use guide above for more information
 - Book Off Holiday (Doctor):
   - Enter start date, end date, reason
 - Conflict Resolution (Admin):
